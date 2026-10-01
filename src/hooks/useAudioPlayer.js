@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { errorMessage, getPlaybackUrl, trackKey } from '../lib/music-api'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { errorMessage, trackKey } from '../lib/music-api'
+import { AudioPreloader } from '../lib/audio-preload'
 
 export default function useAudioPlayer(tracks, audioRef) {
   const requestRef = useRef(null)
   const sessionRef = useRef(null)
   const sequenceRef = useRef(0)
   const pendingRef = useRef(false)
+  const preloadRef = useRef(null)
   const [currentTrack, setCurrentTrack] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -15,12 +17,32 @@ export default function useAudioPlayer(tracks, audioRef) {
   const [volume, setVolume] = useState(0.7)
   const [isMuted, setIsMuted] = useState(false)
   const [shuffle, setShuffle] = useState(false)
+  const [shuffleSeed, setShuffleSeed] = useState(() => Math.random())
   const [repeat, setRepeat] = useState(false)
 
-  useEffect(() => () => {
-    sequenceRef.current += 1
-    requestRef.current?.abort()
+  const nextTrack = useMemo(() => {
+    if (!tracks.length) return null
+    if (!currentTrack) return tracks[0]
+    if (tracks.length === 1) return null
+    const index = tracks.findIndex((track) => trackKey(track) === trackKey(currentTrack))
+    const offset = shuffle ? 1 + Math.floor(shuffleSeed * (tracks.length - 1)) : 1
+    return tracks[(Math.max(index, 0) + offset) % tracks.length]
+  }, [tracks, currentTrack, shuffle, shuffleSeed])
+
+  useEffect(() => {
+    preloadRef.current = new AudioPreloader()
+    return () => {
+      sequenceRef.current += 1
+      requestRef.current?.abort()
+      preloadRef.current.dispose()
+    }
   }, [])
+
+  useEffect(() => {
+    // Let the current track start before competing for network bandwidth.
+    if (!currentTrack || isPlaying) preloadRef.current.preload(nextTrack)
+    else if (preloadRef.current.next?.key !== (nextTrack && trackKey(nextTrack))) preloadRef.current.preload(null)
+  }, [currentTrack, isPlaying, nextTrack])
 
   useEffect(() => {
     if (audioRef.current) {
@@ -41,17 +63,20 @@ export default function useAudioPlayer(tracks, audioRef) {
     audio.pause()
     audio.removeAttribute('src')
     audio.load()
+    preloadRef.current.release()
     setCurrentTrack(track)
+    setShuffleSeed(Math.random())
     setIsLoading(true)
     setIsPlaying(false)
     setPosition(resumeAt)
     setDuration(0)
     setError('')
     try {
-      const url = await getPlaybackUrl(track, controller.signal)
+      const source = await preloadRef.current.source(track, controller.signal, automaticRetry)
       if (sequence !== sequenceRef.current) return
-      sessionRef.current.signedAt = Date.now()
-      audio.src = url
+      sessionRef.current.signedAt = source.signedAt
+      sessionRef.current.cached = source.cached
+      audio.src = source.url
       audio.load()
       await audio.play()
       if (sequence !== sequenceRef.current) return
@@ -81,6 +106,7 @@ export default function useAudioPlayer(tracks, audioRef) {
       audio.pause()
       audio.removeAttribute('src')
       audio.load()
+      preloadRef.current.release()
       setIsLoading(false)
       setIsPlaying(false)
       return
@@ -94,7 +120,7 @@ export default function useAudioPlayer(tracks, audioRef) {
       return
     }
     const session = sessionRef.current
-    if (error || !audio.getAttribute('src') || Date.now() - session.signedAt > 110000 || audio.ended) {
+    if (error || !audio.getAttribute('src') || (!session.cached && Date.now() - session.signedAt > 110000) || audio.ended) {
       await startTrack(currentTrack, audio.ended ? 0 : audio.currentTime)
       return
     }
@@ -119,6 +145,13 @@ export default function useAudioPlayer(tracks, audioRef) {
       return
     }
     if (fromEnd && repeat) return startTrack(currentTrack)
+    if (direction > 0 && nextTrack) {
+      if (fromEnd && !shuffle && index === tracks.length - 1) {
+        setIsPlaying(false)
+        return
+      }
+      return startTrack(nextTrack)
+    }
     let next = index + direction
     if (shuffle && tracks.length > 1) {
       next = (Math.max(index, 0) + 1 + Math.floor(Math.random() * (tracks.length - 1))) % tracks.length
@@ -127,7 +160,7 @@ export default function useAudioPlayer(tracks, audioRef) {
       return
     }
     return startTrack(tracks[(next + tracks.length) % tracks.length])
-  }, [audioRef, currentTrack, repeat, shuffle, startTrack, tracks])
+  }, [audioRef, currentTrack, nextTrack, repeat, shuffle, startTrack, tracks])
 
   const seek = (value) => {
     const audio = audioRef.current

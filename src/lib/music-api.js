@@ -39,6 +39,10 @@ export async function getPlaybackUrl(track, signal) {
   return url
 }
 
+export function getSigningEndpoint(track) {
+  return `${apiBase}/${encodeURIComponent(track.bucketName)}/${encodeURIComponent(track.trackId)}`
+}
+
 export function trackKey(track) {
   return `${track.bucketName}/${track.trackId}`
 }

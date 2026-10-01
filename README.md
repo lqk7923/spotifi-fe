@@ -4,6 +4,8 @@ A React music home page at `/home`, based on the supplied Figma home design.
 Built with Vite, Tailwind CSS, daisyUI, and Lucide React. No login is required.
 The root URL redirects to `/home`.
 
+Backend repository: [Spotifi backend](https://github.com/lqk7923/Spotifi.git).
+
 ## Run locally
 
 ```sh
@@ -28,11 +30,81 @@ appears after the audio metadata loads. An unavailable backend shows a retry sta
 an empty database shows an empty library.
 
 Playback supports play/pause, seeking, volume/mute, previous/next, shuffle, repeat,
-and a queue. Each new track requests a fresh signed URL. Resuming after a long pause
+and a queue. Tracks without a usable preload request a fresh signed URL. Resuming after a long pause
 refreshes the URL while preserving the playback position. Audio network/source errors
 retry with one fresh URL before showing an error. Rapid track changes cancel earlier
 requests so an older response cannot replace the selected track. Playback stops at
 the end of the collection unless shuffle or repeat is enabled.
+
+## Next-track preload
+
+After playback starts, the player signs the predicted next track and fetches only
+`Range: bytes=0-2499999` (2.5 decimal MB). The first track is also preloaded once
+the library arrives. Only one upcoming prefix is kept in memory. Shuffle reserves
+its next selection so pressing Next plays the track that was actually preloaded.
+
+Next, automatic advancement, and selecting that same upcoming track consume its
+cached prefix. A narrow Service Worker endpoint feeds those bytes to the existing
+HTML audio element, then streams the remainder from R2 starting at byte 2,500,000.
+It does not wait for the complete file or combine the file into a full Blob before
+playing. Smaller files are fully cached. Native seek requests are supported: ranges
+inside the prefix use cache, while ranges beyond it go to R2 at their requested offset.
+
+The active prefix is kept in Cache Storage so playback survives Service Worker
+restarts. It is released on track changes/unmount; orphaned prefixes from closed
+pages are cleaned up when a new prefix is stored. Other API/page requests pass through.
+Only prefixes are retained by this feature; the browser manages buffering the remainder.
+Track IDs must identify immutable audio files so a refreshed signature points to the
+same bytes. A signature older than 110 seconds is refreshed before the next R2 request;
+401/403 responses refresh once more without discarding the prefix.
+
+Changing the predicted track cancels the old preload. If a user selects it before
+preload is ready, the player waits at most 150 ms for that preload, then cancels it
+and uses ordinary playback. Unsupported Service Workers, cache failures, and invalid
+range/CORS responses also fall back to ordinary playback.
+
+Production requires HTTPS (localhost works for development), and
+`audio-preload-worker.js` must be served as JavaScript rather than the SPA fallback.
+The R2 bucket must allow the frontend origin, `GET` and the `Range` request header,
+and expose `Content-Range` to JavaScript. An example bucket CORS policy is:
+
+```json
+[
+  {
+    "AllowedOrigins": ["http://localhost:5173", "http://127.0.0.1:5173", "https://your-frontend.example"],
+    "AllowedMethods": ["GET"],
+    "AllowedHeaders": ["Range"],
+    "ExposeHeaders": ["Content-Range", "Content-Length", "Accept-Ranges", "Content-Type"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+See [Cloudflare R2 CORS configuration](https://developers.cloudflare.com/r2/buckets/cors/)
+for applying the bucket policy. Service Worker registration requirements are described
+in [MDN's registration reference](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerContainer/register).
+
+For local development, `r2-cors.local.json` contains a ready-to-paste **Cloudflare
+dashboard** policy (not the Wrangler CLI format). Open R2 Object Storage, select
+the audio bucket, then Settings > CORS Policy > JSON. Add these development origins
+to the existing policy while preserving any production origins, and save. The origin
+must match the actual frontend scheme/hostname/port, without a trailing slash or path.
+The `/api-test` Vite proxy only proxies the signing API; signed audio is fetched
+directly from R2, so enabling CORS on the backend does not enable it on R2.
+
+After saving, reload the app to obtain a fresh signed URL. On the R2 range request,
+check for status 206, `Access-Control-Allow-Origin: http://localhost:5173`, and
+`Access-Control-Expose-Headers` including `Content-Range`. If Network shows 403,
+check signature expiration/validity as well: R2 omits CORS headers on expired
+presigned URL responses, so these can also appear as a CORS error. Reusing a copied
+URL after its two-minute lifetime is not a valid test of the current CORS policy.
+
+To verify in DevTools Network, play a track and look for the next track's
+`bytes=0-2499999` request with status 206 and a matching `Content-Range` response.
+Press Next: playback uses `/__audio_preload__/<id>`, and the R2 continuation normally
+starts at `bytes=2500000-...`; subsequent seek requests may use different offsets.
+The following track should then receive its own prefix request. Signed URLs are
+not cache identities: the cache belongs to the selected track's playback session.
 
 Search filters track IDs and collections locally. Likes are saved in browser storage;
 they are not sent to the backend.

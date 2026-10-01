@@ -7,25 +7,28 @@ const tracks = Array.from({ length: 9 }, (_, index) => ({
 }))
 let mode = 'normal'
 let requests = []
-const wave = Buffer.alloc(44 + 8000 * 2 * 90)
+let audioRequests = []
+const wave = Buffer.alloc(44 + 44100 * 2 * 180)
 wave.write('RIFF'); wave.writeUInt32LE(wave.length - 8, 4); wave.write('WAVEfmt ', 8)
 wave.writeUInt32LE(16, 16); wave.writeUInt16LE(1, 20); wave.writeUInt16LE(1, 22)
-wave.writeUInt32LE(8000, 24); wave.writeUInt32LE(16000, 28)
+wave.writeUInt32LE(44100, 24); wave.writeUInt32LE(88200, 28)
 wave.writeUInt16LE(2, 32); wave.writeUInt16LE(16, 34)
 wave.write('data', 36); wave.writeUInt32LE(wave.length - 44, 40)
 
 http.createServer(async (request, response) => {
   const url = new URL(request.url, 'http://localhost:8081')
   response.setHeader('Access-Control-Allow-Origin', '*')
+  response.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length')
   if (url.pathname === '/__test/state') {
     if (request.method === 'POST') {
       const chunks = []
       for await (const chunk of request) chunks.push(chunk)
       mode = JSON.parse(Buffer.concat(chunks).toString()).mode
       requests = []
+      audioRequests = []
     }
     response.setHeader('Content-Type', 'application/json')
-    response.end(JSON.stringify({ mode, requests }))
+    response.end(JSON.stringify({ mode, requests, audioRequests }))
     return
   }
   if (url.pathname === '/api-test/all') {
@@ -45,6 +48,7 @@ http.createServer(async (request, response) => {
     return
   }
   if (url.pathname.startsWith('/audio/')) {
+    audioRequests.push({ path: url.pathname, range: request.headers.range || null })
     if (mode === 'audio-error') { response.writeHead(404); response.end(); return }
     response.setHeader('Content-Type', 'audio/wav')
     response.setHeader('Accept-Ranges', 'bytes')
@@ -52,6 +56,7 @@ http.createServer(async (request, response) => {
     if (range) {
       const start = Number(range[1])
       const end = range[2] ? Math.min(Number(range[2]), wave.length - 1) : wave.length - 1
+      if (start > end) { response.writeHead(416, { 'Content-Range': `bytes */${wave.length}` }); response.end(); return }
       response.writeHead(206, { 'Content-Range': `bytes ${start}-${end}/${wave.length}`, 'Content-Length': end - start + 1 })
       response.end(wave.subarray(start, end + 1))
     } else {

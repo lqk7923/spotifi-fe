@@ -1,8 +1,9 @@
-import { getPlaybackUrl, getSigningEndpoint, trackKey } from './music-api.js'
+import { getPlaybackUrl, getSigningEndpoint } from './music-api.js'
+import { trackKey } from './tracks.js'
 
 // Decimal MB: preload bytes 0..2,499,999, then continue at byte 2,500,000.
 export const PRELOAD_BYTES = 2_500_000
-const SIGNED_URL_MAX_AGE = 110_000
+export const SIGNED_URL_MAX_AGE = 110_000
 let workerReady
 
 function withTimeout(promise, milliseconds) {
@@ -99,6 +100,26 @@ export async function fetchPrefix(url, signal) {
   return { prefix, total, audioType: response.headers.get('Content-Type') || 'application/octet-stream' }
 }
 
+async function storePrefix(entry, track, signal) {
+  const base = import.meta.env?.BASE_URL || '/'
+  const path = `${base}__audio_preload__/${crypto.randomUUID()}`
+  try {
+    await send(entry.worker, {
+      type: 'store',
+      path,
+      url: entry.url,
+      signedAt: entry.signedAt,
+      signingEndpoint: new URL(getSigningEndpoint(track), location.href).href,
+      ...entry.data,
+    }, [entry.data.prefix])
+    signal.throwIfAborted()
+  } catch (cause) {
+    void send(entry.worker, { type: 'release', path }).catch(() => {})
+    throw cause
+  }
+  return { worker: entry.worker, path }
+}
+
 // One upcoming track in memory; one playing track in the worker's bounded cache.
 export class AudioPreloader {
   constructor() {
@@ -134,25 +155,8 @@ export class AudioPreloader {
         await joinPreload(entry, signal)
         signal.throwIfAborted()
         if (entry.data) {
-          const id = crypto.randomUUID()
-          const base = import.meta.env?.BASE_URL || '/'
-          const path = `${base}__audio_preload__/${id}`
-          try {
-            await send(entry.worker, {
-              type: 'store', path, url: entry.url, signedAt: entry.signedAt,
-              signingEndpoint: new URL(getSigningEndpoint(track), location.href).href,
-              ...entry.data,
-            }, [entry.data.prefix])
-          } catch (cause) {
-            void send(entry.worker, { type: 'release', path }).catch(() => {})
-            throw cause
-          }
-          if (signal.aborted) {
-            void send(entry.worker, { type: 'release', path }).catch(() => {})
-            signal.throwIfAborted()
-          }
-          this.active = { worker: entry.worker, path }
-          return { url: path, signedAt: entry.signedAt, cached: true }
+          this.active = await storePrefix(entry, track, signal)
+          return { url: this.active.path, signedAt: entry.signedAt, cached: true }
         }
       } catch (cause) {
         signal.throwIfAborted()

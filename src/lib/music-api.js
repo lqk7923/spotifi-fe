@@ -1,7 +1,10 @@
-const apiBase = (import.meta.env?.VITE_API_BASE_URL || '/api-test').replace(/\/$/, '')
+import { isValidTrack, trackKey } from './tracks.js'
+
+const apiBase = (import.meta.env?.VITE_API_BASE_URL || '/track').replace(/\/$/, '')
 
 async function request(path, signal) {
   const response = await fetch(`${apiBase}${path}`, {
+    cache: 'no-store',
     signal: signal
       ? AbortSignal.any([signal, AbortSignal.timeout(15000)])
       : AbortSignal.timeout(15000),
@@ -15,9 +18,7 @@ async function request(path, signal) {
 export async function getTracks(signal) {
   const response = await request('/all', signal)
   const tracks = await response.json()
-  if (!Array.isArray(tracks) || tracks.some((track) =>
-    !track || typeof track.bucketName !== 'string' || !track.bucketName ||
-    typeof track.trackId !== 'string' || !track.trackId)) {
+  if (!Array.isArray(tracks) || !tracks.every(isValidTrack)) {
     throw new Error('The music server returned an unexpected track list.')
   }
   return [...new Map(tracks.map((track) => [trackKey(track), track])).values()]
@@ -28,9 +29,14 @@ export async function getPlaybackUrl(track, signal) {
     `/${encodeURIComponent(track.bucketName)}/${encodeURIComponent(track.trackId)}`,
     signal,
   )
-  const url = (await response.text()).trim()
+  let url
   let parsed
-  try { parsed = new URL(url) } catch {
+  try {
+    const data = await response.json()
+    if (typeof data?.trackPresignedLink !== 'string') throw new Error('Missing audio URL')
+    url = data.trackPresignedLink.trim()
+    parsed = new URL(url)
+  } catch {
     throw new Error('The music server did not return a valid audio URL.')
   }
   if (!['https:', 'http:'].includes(parsed.protocol)) {
@@ -41,14 +47,6 @@ export async function getPlaybackUrl(track, signal) {
 
 export function getSigningEndpoint(track) {
   return `${apiBase}/${encodeURIComponent(track.bucketName)}/${encodeURIComponent(track.trackId)}`
-}
-
-export function trackKey(track) {
-  return `${track.bucketName}/${track.trackId}`
-}
-
-export function trackLabel(track) {
-  return `Track ${track.trackId.slice(0, 8)}`
 }
 
 export function errorMessage(error, fallback) {

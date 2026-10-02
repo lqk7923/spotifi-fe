@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { errorMessage, trackKey } from '../lib/music-api'
-import { AudioPreloader } from '../lib/audio-preload'
+import { errorMessage } from '../lib/music-api.js'
+import { trackDurationSeconds, trackKey } from '../lib/tracks.js'
+import { AudioPreloader, SIGNED_URL_MAX_AGE } from '../lib/audio-preload.js'
+
+function playbackErrorMessage(cause, audio) {
+  if (cause.name === 'NotAllowedError') {
+    return 'Your browser paused playback. Press play to listen.'
+  }
+  if (audio.error) {
+    return 'This audio file is unavailable or cannot be played. Press play to retry.'
+  }
+  return errorMessage(cause, 'This track could not be played. Please try again.')
+}
 
 export default function useAudioPlayer(tracks, audioRef) {
   const requestRef = useRef(null)
@@ -40,8 +51,11 @@ export default function useAudioPlayer(tracks, audioRef) {
 
   useEffect(() => {
     // Let the current track start before competing for network bandwidth.
-    if (!currentTrack || isPlaying) preloadRef.current.preload(nextTrack)
-    else if (preloadRef.current.next?.key !== (nextTrack && trackKey(nextTrack))) preloadRef.current.preload(null)
+    if (!currentTrack || isPlaying) {
+      preloadRef.current.preload(nextTrack)
+    } else if (preloadRef.current.next?.key !== (nextTrack && trackKey(nextTrack))) {
+      preloadRef.current.preload(null)
+    }
   }, [currentTrack, isPlaying, nextTrack])
 
   useEffect(() => {
@@ -69,7 +83,7 @@ export default function useAudioPlayer(tracks, audioRef) {
     setIsLoading(true)
     setIsPlaying(false)
     setPosition(resumeAt)
-    setDuration(0)
+    setDuration(trackDurationSeconds(track) ?? 0)
     setError('')
     try {
       const source = await preloadRef.current.source(track, controller.signal, automaticRetry)
@@ -84,11 +98,7 @@ export default function useAudioPlayer(tracks, audioRef) {
     } catch (cause) {
       if (controller.signal.aborted || sequence !== sequenceRef.current) return
       setIsPlaying(false)
-      setError(cause.name === 'NotAllowedError'
-        ? 'Your browser paused playback. Press play to listen.'
-        : audio.error
-          ? 'This audio file is unavailable or cannot be played. Press play to retry.'
-          : errorMessage(cause, 'This track could not be played. Please try again.'))
+      setError(playbackErrorMessage(cause, audio))
     } finally {
       if (sequence === sequenceRef.current) {
         pendingRef.current = false
@@ -120,7 +130,8 @@ export default function useAudioPlayer(tracks, audioRef) {
       return
     }
     const session = sessionRef.current
-    if (error || !audio.getAttribute('src') || (!session.cached && Date.now() - session.signedAt > 110000) || audio.ended) {
+    const expired = !session.cached && Date.now() - session.signedAt >= SIGNED_URL_MAX_AGE
+    if (error || !audio.getAttribute('src') || expired || audio.ended) {
       await startTrack(currentTrack, audio.ended ? 0 : audio.currentTime)
       return
     }
@@ -172,7 +183,9 @@ export default function useAudioPlayer(tracks, audioRef) {
 
   const onMetadata = () => {
     const audio = audioRef.current
-    const nextDuration = Number.isFinite(audio.duration) ? audio.duration : 0
+    const nextDuration = Number.isFinite(audio.duration)
+      ? audio.duration
+      : trackDurationSeconds(sessionRef.current?.track) ?? 0
     setDuration(nextDuration)
     if (sessionRef.current?.resumeAt > 0 && nextDuration > 0) {
       audio.currentTime = Math.min(sessionRef.current.resumeAt, Math.max(0, nextDuration - 0.1))

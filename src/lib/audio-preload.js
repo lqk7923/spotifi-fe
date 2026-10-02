@@ -100,7 +100,7 @@ export async function fetchPrefix(url, signal) {
   return { prefix, total, audioType: response.headers.get('Content-Type') || 'application/octet-stream' }
 }
 
-async function storePrefix(entry, track, signal) {
+async function storePrefix(entry, track, signal, signingEndpointFor) {
   const base = import.meta.env?.BASE_URL || '/'
   const path = `${base}__audio_preload__/${crypto.randomUUID()}`
   try {
@@ -109,7 +109,7 @@ async function storePrefix(entry, track, signal) {
       path,
       url: entry.url,
       signedAt: entry.signedAt,
-      signingEndpoint: new URL(getSigningEndpoint(track), location.href).href,
+      signingEndpoint: new URL(signingEndpointFor(track), location.href).href,
       ...entry.data,
     }, [entry.data.prefix])
     signal.throwIfAborted()
@@ -122,9 +122,11 @@ async function storePrefix(entry, track, signal) {
 
 // One upcoming track in memory; one playing track in the worker's bounded cache.
 export class AudioPreloader {
-  constructor() {
+  constructor({ requestPlaybackUrl = getPlaybackUrl, signingEndpointFor = getSigningEndpoint } = {}) {
     this.next = null
     this.active = null
+    this.requestPlaybackUrl = requestPlaybackUrl
+    this.signingEndpointFor = signingEndpointFor
   }
 
   preload(track) {
@@ -137,7 +139,7 @@ export class AudioPreloader {
     entry.ready = (async () => {
       entry.worker = await getWorker()
       if (!entry.worker || entry.controller.signal.aborted) return
-      entry.url = await getPlaybackUrl(track, entry.controller.signal)
+      entry.url = await this.requestPlaybackUrl(track, entry.controller.signal)
       entry.signedAt = Date.now()
       entry.data = await fetchPrefix(entry.url, entry.controller.signal)
     })().catch(() => { /* Optional preload must never interrupt current playback. */ })
@@ -155,7 +157,7 @@ export class AudioPreloader {
         await joinPreload(entry, signal)
         signal.throwIfAborted()
         if (entry.data) {
-          this.active = await storePrefix(entry, track, signal)
+          this.active = await storePrefix(entry, track, signal, this.signingEndpointFor)
           return { url: this.active.path, signedAt: entry.signedAt, cached: true }
         }
       } catch (cause) {
@@ -170,7 +172,7 @@ export class AudioPreloader {
       }
     }
     if (this.next?.key !== trackKey(track) || bypass) this.preload(null)
-    const url = await getPlaybackUrl(track, signal)
+    const url = await this.requestPlaybackUrl(track, signal)
     return { url, signedAt: Date.now(), cached: false }
   }
 

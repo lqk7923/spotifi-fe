@@ -1,6 +1,8 @@
 import { AudioLines, CircleAlert, Clock3, Heart, LoaderCircle, Music2, Play, RefreshCw } from 'lucide-react'
 import { timeLabel } from '../lib/format.js'
-import { trackDurationSeconds, trackKey, trackLabel } from '../lib/tracks.js'
+import { trackAuthor, trackDurationSeconds, trackKey, trackLabel } from '../lib/tracks.js'
+import { albumPath } from '../lib/navigation.js'
+import AppLink from './AppLink.jsx'
 import Artwork from './Artwork.jsx'
 import IconButton from './IconButton.jsx'
 import TrackPlayButton, { TrackPlaybackIcon } from './TrackPlayButton.jsx'
@@ -8,7 +10,7 @@ import TrackPlayButton, { TrackPlaybackIcon } from './TrackPlayButton.jsx'
 function TrackRow({ track, index, player, library }) {
   const selected = player.currentTrack && trackKey(track) === trackKey(player.currentTrack)
   const liked = library.isLiked(track)
-  const subtitle = track.author?.trim() || track.trackId
+  const subtitle = trackAuthor(track)
   const duration = selected && player.duration > 0 ? player.duration : trackDurationSeconds(track)
 
   return (
@@ -26,8 +28,19 @@ function TrackRow({ track, index, player, library }) {
           <Artwork track={track} small />
           <span><strong>{trackLabel(track)}</strong><small title={subtitle}>{subtitle}</small></span>
         </TrackPlayButton>
+        {!library.selectedAlbum && (
+          <AppLink className="album-link mobile-album-link" href={albumPath(track.albumId)}>
+            {track.albumTitle || 'Untitled album'}
+          </AppLink>
+        )}
       </td>
-      <td className="collection-column"><span title={track.bucketName}>{track.bucketName}</span></td>
+      {!library.selectedAlbum && (
+        <td className="collection-column">
+          <AppLink className="album-link" title={track.albumTitle} href={albumPath(track.albumId)}>
+            {track.albumTitle || 'Untitled album'}
+          </AppLink>
+        </td>
+      )}
       <td className="like-column">
         <IconButton
           icon={Heart} label={`${liked ? 'Unlike' : 'Like'} ${trackLabel(track)}`}
@@ -40,7 +53,7 @@ function TrackRow({ track, index, player, library }) {
 }
 
 function LibraryContent({ library, player }) {
-  const { loading, error, tracks, visibleTracks, likedOnly, refresh, resetFilters } = library
+  const { loading, error, collectionTracks, visibleTracks, selectedAlbum, likedOnly, refresh, resetFilters } = library
   if (loading) {
     return (
       <div className="track-loading" role="status">
@@ -58,18 +71,29 @@ function LibraryContent({ library, player }) {
     )
   }
   if (!visibleTracks.length) {
+    if (selectedAlbum && !collectionTracks.length) {
+      return (
+        <div className="state-panel">
+          <span className="state-icon"><Music2 size={32} /></span>
+          <h3>No tracks in this album</h3><p>There are no tracks available for this album.</p>
+          <button className="btn retry-button" onClick={refresh}><RefreshCw size={16} />Refresh album</button>
+        </div>
+      )
+    }
     let message = 'Add some tracks to your music collection, then refresh to start listening.'
-    if (tracks.length) {
+    if (collectionTracks.length) {
       message = likedOnly
         ? 'Like a track using its heart button to save it here.'
-        : 'Try another search or collection.'
+        : 'Try another search.'
     }
     return (
       <div className="state-panel">
         <span className="state-icon"><Music2 size={32} /></span>
-        <h3>{tracks.length ? 'No matching tracks' : 'Your library starts here'}</h3><p>{message}</p>
-        <button className="btn retry-button" onClick={tracks.length ? resetFilters : refresh}>
-          {tracks.length ? 'Show all tracks' : 'Refresh library'}
+        <h3>{collectionTracks.length ? 'No matching tracks' : 'Your library starts here'}</h3><p>{message}</p>
+        <button className="btn retry-button" onClick={collectionTracks.length
+          ? library.search ? () => library.setSearch('') : resetFilters
+          : refresh}>
+          {collectionTracks.length ? library.search ? 'Clear search' : 'Show all tracks' : 'Refresh library'}
         </button>
       </div>
     )
@@ -80,7 +104,7 @@ function LibraryContent({ library, player }) {
         <thead>
           <tr>
             <th className="number-column">#</th><th>Title</th>
-            <th className="collection-column">Album(future)</th>
+            {!selectedAlbum && <th className="collection-column">Album</th>}
             <th className="like-column"><span className="sr-only">Favorite</span></th>
             <th className="duration-column"><Clock3 size={16} aria-label="Duration" /></th>
           </tr>
@@ -96,14 +120,17 @@ function LibraryContent({ library, player }) {
 }
 
 export default function TrackLibrary({ library, player, libraryRef }) {
-  const { loading, error, visibleTracks, likedOnly, bucket, refresh } = library
-  const title = likedOnly ? 'Liked Songs' : bucket || 'All tracks'
+  const { loading, error, visibleTracks, likedOnly, selectedAlbum, refresh } = library
+  const title = selectedAlbum ? 'Tracks' : likedOnly ? 'Liked Songs' : 'All tracks'
   const countLabel = `${visibleTracks.length} ${visibleTracks.length === 1 ? 'track' : 'tracks'} in your collection`
 
   return (
     <section id="all-tracks" ref={libraryRef} aria-labelledby="library-title" className="library-section">
       <div className="section-heading library-heading">
-        <div><h2 id="library-title">{title}</h2><p>{loading ? 'Finding your music…' : countLabel}</p></div>
+        <div>
+          <h2 id="library-title">{title}</h2>
+          <p>{loading ? 'Finding your music…' : countLabel}</p>
+        </div>
         <div className="library-actions">
           <button
             className="btn play-all" disabled={loading || !!error || !visibleTracks.length}

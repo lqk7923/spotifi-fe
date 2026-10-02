@@ -1,6 +1,7 @@
 import { isValidTrack, trackKey } from './tracks.js'
 
-const apiBase = (import.meta.env?.VITE_API_BASE_URL || '/track').replace(/\/$/, '')
+// Accept a backend root or the previously documented /track prefix.
+const apiBase = (import.meta.env?.VITE_API_BASE_URL || '').replace(/\/+$/, '').replace(/\/track$/, '')
 
 async function request(path, signal) {
   const response = await fetch(`${apiBase}${path}`, {
@@ -15,8 +16,8 @@ async function request(path, signal) {
   return response
 }
 
-export async function getTracks(signal) {
-  const response = await request('/all', signal)
+async function getTrackList(path, signal) {
+  const response = await request(path, signal)
   const tracks = await response.json()
   if (!Array.isArray(tracks) || !tracks.every(isValidTrack)) {
     throw new Error('The music server returned an unexpected track list.')
@@ -24,9 +25,17 @@ export async function getTracks(signal) {
   return [...new Map(tracks.map((track) => [trackKey(track), track])).values()]
 }
 
+export function getTracks(signal) {
+  return getTrackList('/track/all', signal)
+}
+
+export function getAlbumTracks(albumId, signal) {
+  return getTrackList(`/album/${encodeURIComponent(albumId)}/tracks`, signal)
+}
+
 export async function getPlaybackUrl(track, signal) {
   const response = await request(
-    `/${encodeURIComponent(track.bucketName)}/${encodeURIComponent(track.trackId)}`,
+    `/track/${encodeURIComponent(track.bucketName)}/${encodeURIComponent(track.trackId)}`,
     signal,
   )
   let url
@@ -46,7 +55,7 @@ export async function getPlaybackUrl(track, signal) {
 }
 
 export function getSigningEndpoint(track) {
-  return `${apiBase}/${encodeURIComponent(track.bucketName)}/${encodeURIComponent(track.trackId)}`
+  return `${apiBase}/track/${encodeURIComponent(track.bucketName)}/${encodeURIComponent(track.trackId)}`
 }
 
 export function errorMessage(error, fallback) {

@@ -9,7 +9,7 @@ import IconButton from './IconButton.jsx'
 
 export default function PlayerBar({ audioRef, player, library, queueOpen, onToggleQueue }) {
   const { currentTrack, isLoading, isPlaying, duration, position, volume, isMuted } = player
-  const hasTracks = library.tracks.length > 0
+  const hasTracks = library.collectionTracks.length > 0
   const liked = library.isLiked(currentTrack)
   const effectiveVolume = isMuted ? 0 : volume
   const progress = duration ? position / duration * 100 : 0

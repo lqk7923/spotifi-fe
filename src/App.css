@@ -124,6 +124,7 @@
   color: var(--muted);
   padding: 10px 0;
   text-align: left;
+  font-size: 15px;
 }
 
 .bucket-link span {
@@ -293,7 +294,7 @@ h1 {
 
 .quick-track > span:not(.quick-play) {
   font-weight: 650;
-  font-size: 13px;
+  font-size: 16px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -391,7 +392,7 @@ h2 {
 }
 
 .music-card h3 {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -400,7 +401,8 @@ h2 {
 }
 
 .music-card p {
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -651,6 +653,70 @@ h2 {
   white-space: nowrap;
 }
 
+.album-link {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.album-link:hover, .album-link:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.mobile-album-link {
+  display: none;
+}
+
+.album-hero {
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
+  padding: 28px 36px 36px;
+  background: linear-gradient(180deg, #382b51, #201c29);
+}
+
+.album-hero > .track-art {
+  width: clamp(120px, 18vw, 220px);
+  flex-shrink: 0;
+  box-shadow: 0 12px 35px #0005;
+}
+
+.album-details {
+  min-width: 0;
+}
+
+.album-details h1 {
+  margin: 12px 0 16px;
+  font-size: clamp(28px, 4vw, 60px);
+  overflow-wrap: anywhere;
+}
+
+.album-author {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.album-meta {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.album-content .library-section {
+  margin-top: 28px;
+}
+
 .like-column {
   width: 46px;
 }
@@ -716,7 +782,7 @@ h2 {
 
 .track-title-cell strong {
   color: #f4f4f4;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 550;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -728,7 +794,8 @@ h2 {
 }
 
 .track-title-cell small {
-  font-size: 10px;
+  font-size: 14px;
+  font-weight: 600;
   color: #777;
   white-space: nowrap;
   overflow: hidden;
@@ -903,12 +970,13 @@ h2 {
 .queue-current strong {
   display: block;
   margin-top: 15px;
-  font-size: 15px;
+  font-size: 18px;
 }
 
 .queue-current p {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: 600;
   margin: 6px 0 10px;
   overflow-wrap: anywhere;
 }
@@ -948,7 +1016,7 @@ h2 {
 }
 
 .queue-track strong {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 550;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -956,7 +1024,8 @@ h2 {
 }
 
 .queue-track small {
-  font-size: 10px;
+  font-size: 13px;
+  font-weight: 600;
   color: #777;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1016,7 +1085,7 @@ h2 {
 }
 
 .player-track strong {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 550;
   white-space: nowrap;
   overflow: hidden;
@@ -1024,7 +1093,8 @@ h2 {
 }
 
 .player-track span:not(.cover-label):not(.cover-id) {
-  font-size: 10px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -1228,6 +1298,10 @@ h2 {
 }
 
 @media (max-width: 760px) {
+  .album-hero {
+    padding: 24px;
+    gap: 18px;
+  }
   .music-app {
     grid-template-columns: 64px minmax(0, 1fr);
   }
@@ -1288,7 +1362,7 @@ h2 {
     height: 56px;
   }
   .quick-track > span:not(.quick-play) {
-    font-size: 11px;
+    font-size: 14px;
   }
   .quick-play {
     width: 25px;
@@ -1299,6 +1373,12 @@ h2 {
   }
   .collection-column {
     display: none;
+  }
+  .mobile-album-link {
+    display: block;
+    margin: 5px 0 0 54px;
+    max-width: calc(100% - 54px);
+    font-size: 12px;
   }
   .player-bar {
     grid-template-columns: minmax(0, 1fr) minmax(210px, 1.2fr) 35px;
@@ -1318,6 +1398,14 @@ h2 {
 }
 
 @media (max-width: 520px) {
+  .album-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px 16px 28px;
+  }
+  .album-hero > .track-art {
+    width: 150px;
+  }
   .music-app {
     --player-height: 110px;
     grid-template-columns: 56px minmax(0, 1fr);
@@ -1363,7 +1451,7 @@ h2 {
     height: 48px;
   }
   .quick-track > span:not(.quick-play) {
-    font-size: 12px;
+    font-size: 15px;
   }
   .quick-play {
     opacity: 1;
@@ -1382,7 +1470,7 @@ h2 {
     padding: 10px;
   }
   .music-card h3 {
-    font-size: 12px;
+    font-size: 15px;
   }
   .cover-label {
     font-size: 7px;
@@ -1426,14 +1514,19 @@ h2 {
     gap: 8px;
   }
   .track-title-cell strong {
-    font-size: 11px;
+    font-size: 15px;
   }
   .track-title-cell small {
-    font-size: 9px;
+    font-size: 13px;
   }
   .track-title-cell .track-art-small {
     width: 32px;
     height: 32px;
+  }
+  .mobile-album-link {
+    margin-left: 40px;
+    max-width: calc(100% - 40px);
+    font-size: 12px;
   }
   .state-panel {
     min-height: 270px;
@@ -1488,10 +1581,10 @@ h2 {
     grid-row: 2;
   }
   .player-track strong {
-    font-size: 11px;
+    font-size: 14px;
   }
   .player-track span:not(.cover-label):not(.cover-id) {
-    font-size: 9px;
+    font-size: 12px;
   }
   .queue-panel.queue-open {
     width: min(280px, calc(100vw - 56px));

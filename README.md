@@ -1,8 +1,10 @@
 # Spotifi
 
-A React music home page at `/home`, based on the supplied Figma home design.
+A React music home page at `/`, based on the supplied Figma home design.
 Built with Vite, Tailwind CSS, daisyUI, and Lucide React. No login is required.
-The root URL redirects to `/home`.
+Albums have dedicated pages at `/album/{uuid}`. Click the Spotifi logo to return
+to Home; browser Back/Forward also works. The old `/home` URL redirects to `/`.
+The player remains mounted when navigating between Home and an album.
 
 Backend repository: [Spotifi backend](https://github.com/lqk7923/Spotifi.git).
 
@@ -14,14 +16,16 @@ npm run dev
 ```
 
 Start the music backend on `http://localhost:8080`, then open
-`http://localhost:5173/home` (use the port printed by Vite if 5173 is occupied).
-Vite forwards `/track` requests to the backend during development and preview.
+`http://localhost:5173/` (use the port printed by Vite if 5173 is occupied).
+Vite forwards `/track` and `/album/{uuid}/tracks` API requests to the backend during
+development and preview. Album page URLs serve the frontend so deep links and reloads work.
 To change the backend address, copy `.env.example` to `.env.local` and set
 `API_PROXY_TARGET`.
 
 ## Music API
 
-- `GET /track/all`: direct JSON array of `{ bucketName, trackId, trackTitle, trackDuration, author }`. `trackDuration` is milliseconds (for example, `12000` means 12 seconds).
+- `GET /track/all`: direct JSON array of `{ bucketName, trackId, trackTitle, trackDuration, author, albumId, albumTitle }`. `trackDuration` is milliseconds (for example, `12000` means 12 seconds). `author` is the album author; only tracks with a matching album are returned.
+- `GET /album/{albumId}/tracks`: direct array with the same track structure. Opening an album in the sidebar or track table fetches this endpoint using the UUID from the track response. An empty or nonexistent album returns `[]` and displays an empty album state.
 - `GET /track/{bucket}/{trackId}`: JSON `{ "trackPresignedLink": "https://..." }`, valid for two minutes. Both path parameters are URL-encoded.
 
 The page uses real API titles, authors, and durations with generated cover illustrations.
@@ -29,6 +33,11 @@ Missing titles/authors fall back to IDs/collections. API durations are converted
 milliseconds to seconds for display and player controls; loaded audio metadata takes
 precedence. An unavailable backend shows a retry state; an empty database shows an
 empty library.
+
+Albums are grouped by `albumId`; search includes album titles and IDs. Playback and
+the queue use the selected album's returned tracks. List order follows the response;
+the backend currently provides no pagination or guaranteed sort order. For production,
+`VITE_API_BASE_URL` accepts the backend root (and the legacy `/track` prefix).
 
 Playback supports play/pause, seeking, volume/mute, previous/next, shuffle, repeat,
 and a queue. Tracks without a usable preload request a fresh signed URL. Resuming after a long pause
@@ -119,19 +128,22 @@ npm run build
 npm run preview
 ```
 
-Deploy `dist` with a fallback to `index.html` for `/home`. Configure a reverse proxy
-for `/track`, or set `VITE_API_BASE_URL` to a full backend API prefix before building
+Deploy `dist` with an SPA fallback to `index.html` for `/` and `/album/{uuid}`.
+Configure a reverse proxy for `/track` and `/album/{uuid}/tracks` API requests,
+or set `VITE_API_BASE_URL` to the backend root before building
 and allow the frontend origin through backend CORS. The browser must be able to access
 the signed R2 audio URL directly; the backend signing endpoint does not stream audio.
 
 ## Source structure
 
 - `src/App.jsx`: route entry and shared stylesheet.
-- `src/pages/HomePage.jsx`: composes the home page and connects library/player hooks.
+- `src/pages/HomePage.jsx`, `AlbumPage.jsx`: dedicated Home and album content.
+- `src/components/MusicLayout.jsx`: shared library/player hooks and persistent player layout.
 - `src/components/`: sidebar, highlights, track table, queue, player controls, and shared buttons/artwork.
 - `src/hooks/useMusicLibrary.js`: list loading, local search/filter state, and persisted likes.
 - `src/hooks/useAudioPlayer.js`: audio lifecycle, playback controls, and next-track selection.
 - `src/lib/music-api.js`: backend requests and response handling.
+- `src/lib/navigation.js`, `src/hooks/useRoute.js`: URL routing and browser history.
 - `src/lib/tracks.js`, `format.js`: track identity, validation, filtering, and display formatting.
 - `src/lib/audio-preload.js`: optional next-track preload and communication with the Service Worker.
 - `public/audio-preload-worker.js`: cached byte ranges and signed URL renewal; served directly at the app root.
@@ -153,6 +165,15 @@ node tests/fixture-server.mjs
 In a second terminal, start Vite with `API_PROXY_TARGET=http://127.0.0.1:8081`
 (for PowerShell: `$env:API_PROXY_TARGET='http://127.0.0.1:8081'; npm run dev`).
 The fixture is only for testing and is never used by the default app configuration.
+
+## Preload benchmark
+
+With Vite running, open `http://localhost:5173/benchmarks/preload.html` to compare
+native playback, a ready preload, and selection during an in-flight preload.
+The page reports startup p50/p95, preparation time, cache hits, and observation
+window stalls, and exports raw JSON. It supports the real backend/R2 and an
+optional dev-only network fixture on the same port. See
+[benchmark methodology](benchmarks/README.md) for controls and limitations.
 
 ## Styling and icons
 

@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-if (window.location.pathname === '/') {
-  window.history.replaceState(null, '', `/home${window.location.search}${window.location.hash}`)
+if (['/home', '/home/'].includes(window.location.pathname)) {
+  window.history.replaceState(null, '', `/${window.location.search}${window.location.hash}`)
 }
 
 createRoot(document.getElementById('root')).render(

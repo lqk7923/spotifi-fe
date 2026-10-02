@@ -1,26 +1,22 @@
 import { Headphones, Heart, Home, Library, ListMusic, Music2, Search } from 'lucide-react'
+import { albumPath } from '../lib/navigation.js'
+import AppLink from './AppLink.jsx'
 
 export default function Sidebar({ library, onHome, onSearch, onLibrary }) {
-  const { bucket, buckets, likedOnly, likedCount, resetFilters, setBucket, setLikedOnly } = library
+  const { selectedAlbum, albums, likedOnly, likedCount, resetFilters } = library
 
   const showAll = () => {
     resetFilters()
     onLibrary()
   }
   const showLiked = () => {
-    setLikedOnly((value) => !value)
-    setBucket('')
-    onLibrary()
-  }
-  const showBucket = (name) => {
-    setBucket(name)
-    setLikedOnly(false)
+    library.showLiked()
     onLibrary()
   }
 
   return (
     <aside className="sidebar" aria-label="Main navigation">
-      <a className="brand" href="/home" aria-label="Spotifi home">
+      <AppLink className="brand" href="/" aria-label="Spotifi home" onClick={onHome}>
         <svg width="34" height="34" viewBox="0 0 40 40" fill="none" aria-hidden="true">
           <circle cx="20" cy="20" r="20" fill="currentColor" />
           <path
@@ -29,9 +25,9 @@ export default function Sidebar({ library, onHome, onSearch, onLibrary }) {
           />
         </svg>
         <span>Spotifi</span>
-      </a>
+      </AppLink>
       <nav className="nav-links">
-        <button className={`nav-item ${!likedOnly && !bucket ? 'nav-active' : ''}`} onClick={onHome}>
+        <button className={`nav-item ${!likedOnly && !selectedAlbum ? 'nav-active' : ''}`} onClick={onHome}>
           <Home size={23} />Home
         </button>
         <button className="nav-item" onClick={onSearch}><Search size={23} />Search</button>
@@ -48,17 +44,19 @@ export default function Sidebar({ library, onHome, onSearch, onLibrary }) {
       </div>
       <div className="sidebar-divider" />
       <div className="sidebar-library">
-        <p className="eyebrow">YOUR COLLECTIONS</p>
-        {buckets.map((name) => (
-          <button
-            key={name}
-            className={`bucket-link ${bucket === name ? 'active' : ''}`}
-            onClick={() => showBucket(name)}
+        <p className="eyebrow">YOUR ALBUMS</p>
+        {albums.map((album) => (
+          <AppLink
+            key={album.albumId}
+            className={`bucket-link ${selectedAlbum?.albumId === album.albumId ? 'active' : ''}`}
+            aria-current={selectedAlbum?.albumId === album.albumId ? 'page' : undefined}
+            title={album.albumTitle}
+            href={albumPath(album.albumId)}
           >
-            <Music2 size={15} /><span>{name}</span>
-          </button>
+            <Music2 size={15} /><span>{album.albumTitle || 'Untitled album'}</span>
+          </AppLink>
         ))}
-        {!buckets.length && <p className="sidebar-hint">Your music collections will appear here.</p>}
+        {!albums.length && <p className="sidebar-hint">Your albums will appear here.</p>}
       </div>
       <div className="sidebar-bottom"><Headphones size={16} /><span>Made for listening.</span></div>
     </aside>

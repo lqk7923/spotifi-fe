@@ -19,7 +19,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['tests/**/*.mjs', 'vite.config.js', 'eslint.config.js'],
+    files: ['tests/**/*.mjs', 'benchmarks/fixture-plugin.js', 'vite.config.js', 'eslint.config.js'],
     languageOptions: { globals: globals.node },
   },
 ])

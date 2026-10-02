@@ -34,8 +34,9 @@ export default function useAudioPlayer(tracks, audioRef) {
   const nextTrack = useMemo(() => {
     if (!tracks.length) return null
     if (!currentTrack) return tracks[0]
-    if (tracks.length === 1) return null
     const index = tracks.findIndex((track) => trackKey(track) === trackKey(currentTrack))
+    if (index < 0) return tracks[0]
+    if (tracks.length === 1) return null
     const offset = shuffle ? 1 + Math.floor(shuffleSeed * (tracks.length - 1)) : 1
     return tracks[(Math.max(index, 0) + offset) % tracks.length]
   }, [tracks, currentTrack, shuffle, shuffleSeed])

@@ -1,5 +1,6 @@
 const CACHE_NAME = 'spotifi-audio-prefix-v1'
 const signatures = new Map()
+const cacheOperations = new Map()
 
 export function parseRange(header, total) {
   if (!header) return { start: 0, end: total - 1, partial: false }
@@ -21,7 +22,9 @@ async function freshSignature(source, force = false) {
   current.pending = (async () => {
     const response = await fetch(source.signingEndpoint, { cache: 'no-store', signal: AbortSignal.timeout(15_000) })
     if (!response.ok) throw new Error('Could not refresh audio signature')
-    const url = (await response.text()).trim()
+    const data = await response.json()
+    if (typeof data?.trackPresignedLink !== 'string') throw new Error('Invalid audio URL')
+    const url = data.trackPresignedLink.trim()
     if (!['http:', 'https:'].includes(new URL(url).protocol)) throw new Error('Invalid audio URL')
     current.url = url
     current.signedAt = Date.now()
@@ -112,7 +115,10 @@ if (typeof self !== 'undefined' && self.clients) {
     const owner = event.source?.id
     const prefix = new URL('__audio_preload__/', self.registration.scope).pathname
     if (!owner || typeof data?.path !== 'string' || !data.path.startsWith(prefix)) return
-    event.waitUntil((async () => {
+    // Keep store/release messages in order for each tab. A delayed old store
+    // must finish before a new store can clean up that tab's previous prefix.
+    const previous = cacheOperations.get(owner) || Promise.resolve()
+    const operation = previous.catch(() => {}).then(async () => {
       const cache = await caches.open(CACHE_NAME)
       const key = new URL(data.path, self.location.origin).href
       if (data.type === 'store') {
@@ -142,7 +148,12 @@ if (typeof self !== 'undefined' && self.clients) {
         }
       }
       event.ports[0]?.postMessage({ ok: true })
-    })().catch((cause) => event.ports[0]?.postMessage({ error: cause.message })))
+    }).catch((cause) => event.ports[0]?.postMessage({ error: cause.message }))
+      .finally(() => {
+        if (cacheOperations.get(owner) === operation) cacheOperations.delete(owner)
+      })
+    cacheOperations.set(owner, operation)
+    event.waitUntil(operation)
   })
   self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url)

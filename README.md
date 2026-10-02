@@ -15,19 +15,20 @@ npm run dev
 
 Start the music backend on `http://localhost:8080`, then open
 `http://localhost:5173/home` (use the port printed by Vite if 5173 is occupied).
-Vite forwards `/api-test` requests to the backend during development and preview.
+Vite forwards `/track` requests to the backend during development and preview.
 To change the backend address, copy `.env.example` to `.env.local` and set
 `API_PROXY_TARGET`.
 
 ## Music API
 
-- `GET /api-test/all`: JSON array of `{ bucketName, trackId }`.
-- `GET /api-test/{bucket}/{trackId}`: plain-text signed audio URL, valid for two minutes.
+- `GET /track/all`: direct JSON array of `{ bucketName, trackId, trackTitle, trackDuration, author }`. `trackDuration` is milliseconds (for example, `12000` means 12 seconds).
+- `GET /track/{bucket}/{trackId}`: JSON `{ "trackPresignedLink": "https://..." }`, valid for two minutes. Both path parameters are URL-encoded.
 
-The page uses real API responses. Since the API has no titles, artists, or artwork,
-tracks are labeled using their IDs and use generated cover illustrations. Duration
-appears after the audio metadata loads. An unavailable backend shows a retry state;
-an empty database shows an empty library.
+The page uses real API titles, authors, and durations with generated cover illustrations.
+Missing titles/authors fall back to IDs/collections. API durations are converted from
+milliseconds to seconds for display and player controls; loaded audio metadata takes
+precedence. An unavailable backend shows a retry state; an empty database shows an
+empty library.
 
 Playback supports play/pause, seeking, volume/mute, previous/next, shuffle, repeat,
 and a queue. Tracks without a usable preload request a fresh signed URL. Resuming after a long pause
@@ -52,7 +53,9 @@ inside the prefix use cache, while ranges beyond it go to R2 at their requested 
 
 The active prefix is kept in Cache Storage so playback survives Service Worker
 restarts. It is released on track changes/unmount; orphaned prefixes from closed
-pages are cleaned up when a new prefix is stored. Other API/page requests pass through.
+pages are cleaned up when a new prefix is stored. Cache writes and releases run in
+message order per tab so rapid track changes cannot remove the newest prefix.
+Other API/page requests pass through.
 Only prefixes are retained by this feature; the browser manages buffering the remainder.
 Track IDs must identify immutable audio files so a refreshed signature points to the
 same bytes. A signature older than 110 seconds is refreshed before the next R2 request;
@@ -89,7 +92,7 @@ dashboard** policy (not the Wrangler CLI format). Open R2 Object Storage, select
 the audio bucket, then Settings > CORS Policy > JSON. Add these development origins
 to the existing policy while preserving any production origins, and save. The origin
 must match the actual frontend scheme/hostname/port, without a trailing slash or path.
-The `/api-test` Vite proxy only proxies the signing API; signed audio is fetched
+The `/track` Vite proxy only proxies the signing API; signed audio is fetched
 directly from R2, so enabling CORS on the backend does not enable it on R2.
 
 After saving, reload the app to obtain a fresh signed URL. On the R2 range request,
@@ -106,7 +109,7 @@ starts at `bytes=2500000-...`; subsequent seek requests may use different offset
 The following track should then receive its own prefix request. Signed URLs are
 not cache identities: the cache belongs to the selected track's playback session.
 
-Search filters track IDs and collections locally. Likes are saved in browser storage;
+Search filters titles, authors, track IDs, and collections locally. Likes are saved in browser storage;
 they are not sent to the backend.
 
 ## Production
@@ -117,9 +120,21 @@ npm run preview
 ```
 
 Deploy `dist` with a fallback to `index.html` for `/home`. Configure a reverse proxy
-for `/api-test`, or set `VITE_API_BASE_URL` to a full backend API prefix before building
+for `/track`, or set `VITE_API_BASE_URL` to a full backend API prefix before building
 and allow the frontend origin through backend CORS. The browser must be able to access
 the signed R2 audio URL directly; the backend signing endpoint does not stream audio.
+
+## Source structure
+
+- `src/App.jsx`: route entry and shared stylesheet.
+- `src/pages/HomePage.jsx`: composes the home page and connects library/player hooks.
+- `src/components/`: sidebar, highlights, track table, queue, player controls, and shared buttons/artwork.
+- `src/hooks/useMusicLibrary.js`: list loading, local search/filter state, and persisted likes.
+- `src/hooks/useAudioPlayer.js`: audio lifecycle, playback controls, and next-track selection.
+- `src/lib/music-api.js`: backend requests and response handling.
+- `src/lib/tracks.js`, `format.js`: track identity, validation, filtering, and display formatting.
+- `src/lib/audio-preload.js`: optional next-track preload and communication with the Service Worker.
+- `public/audio-preload-worker.js`: cached byte ranges and signed URL renewal; served directly at the app root.
 
 ## Validation
 

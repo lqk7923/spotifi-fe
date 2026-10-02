@@ -8,7 +8,7 @@ const file = Uint8Array.from({ length: 24 }, (_, index) => index)
 const source = () => ({
   path: '/__audio_preload__/test', prefix: file.slice(0, 8).buffer,
   total: file.length, type: 'audio/wav', url: 'https://r2.example/old',
-  signedAt: Date.now(), signingEndpoint: 'https://app.example/api-test/bucket/track',
+  signedAt: Date.now(), signingEndpoint: 'https://app.example/track/bucket/track',
 })
 const request = (range) => new Request('https://app.example/__audio_preload__/test', {
   headers: range ? { Range: range } : {},
@@ -111,7 +111,7 @@ test('refreshes expired signatures while retaining the cached prefix', async () 
   const calls = []
   mock.method(globalThis, 'fetch', async (url, options) => {
     calls.push(url)
-    if (url === expired.signingEndpoint) return new Response('https://r2.example/fresh')
+    if (url === expired.signingEndpoint) return Response.json({ trackPresignedLink: 'https://r2.example/fresh' })
     assert.equal(options.headers.Range, 'bytes=8-23')
     return new Response(file.slice(8), { status: 206, headers: { 'Content-Range': 'bytes 8-23/24' } })
   })
@@ -124,7 +124,7 @@ test('retries a rejected signature once and keeps the continuation offset', asyn
   const calls = []
   mock.method(globalThis, 'fetch', async (url, options) => {
     calls.push(url)
-    if (url === current.signingEndpoint) return new Response('https://r2.example/retry')
+    if (url === current.signingEndpoint) return Response.json({ trackPresignedLink: 'https://r2.example/retry' })
     if (url === current.url) return new Response(null, { status: 403 })
     assert.equal(options.headers.Range, 'bytes=8-23')
     return new Response(file.slice(8), { status: 206, headers: { 'Content-Range': 'bytes 8-23/24' } })
@@ -181,6 +181,35 @@ test('failed preload falls back to an already acquired, valid signed URL', async
   assert.equal(result.cached, false)
 })
 
+test('selection renews an expired preload URL through the JSON signing API', async () => {
+  const preloader = new AudioPreloader()
+  preloader.next = {
+    key: 'bucket/track', ready: Promise.resolve(), controller: new AbortController(),
+    url: 'https://r2.example/expired', signedAt: Date.now() - 120_000,
+  }
+  mock.method(globalThis, 'fetch', async (url) => {
+    assert.equal(url, '/track/bucket/track')
+    return Response.json({ trackPresignedLink: 'https://r2.example/renewed' })
+  })
+  const result = await preloader.source({ bucketName: 'bucket', trackId: 'track' }, new AbortController().signal)
+  assert.equal(result.url, 'https://r2.example/renewed')
+  assert.equal(result.cached, false)
+  assert.ok(Date.now() - result.signedAt < 1000)
+})
+
+test('worker refuses invalid JSON signing payloads before fetching audio', async () => {
+  for (const [index, body] of [null, {}, { trackPresignedLink: 123 },
+    { trackPresignedLink: 'javascript:alert(1)' }].entries()) {
+    const expired = { ...source(), path: `/invalid-signature-${index}`, signedAt: Date.now() - 120_000 }
+    mock.method(globalThis, 'fetch', async (url) => {
+      assert.equal(url, expired.signingEndpoint)
+      return Response.json(body)
+    })
+    await assert.rejects(bytes(createAudioResponse(request(), expired)), /Invalid audio URL/)
+    mock.restoreAll()
+  }
+})
+
 test('canceling selection cancels an in-flight preload', async () => {
   const preloader = new AudioPreloader()
   const controller = new AbortController()
@@ -232,7 +261,7 @@ test('cached selection publishes the prefix, preserves track identity and releas
     assert.match(result.url, /^\/__audio_preload__\//)
     assert.equal(messages[0].type, 'store')
     assert.equal(messages[0].audioType, 'audio/wav')
-    assert.equal(messages[0].signingEndpoint, 'https://app.example/api-test/bucket/track')
+    assert.equal(messages[0].signingEndpoint, 'https://app.example/track/bucket/track')
     assert.equal(preloader.next, null)
     preloader.release()
     assert.deepEqual(messages[1], { type: 'release', path: result.url })

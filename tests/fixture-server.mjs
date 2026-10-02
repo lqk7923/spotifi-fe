@@ -4,6 +4,9 @@ import http from 'node:http'
 const tracks = Array.from({ length: 9 }, (_, index) => ({
   bucketName: index < 6 ? 'music-bucket' : 'weekend-collection',
   trackId: `${['550e8400', '7ab2c391', 'a83d1940', 'c982a01e', 'bd43d971', '42b7f310', 'e743bd82', '127cb894', '32c974bb'][index]}-e29b-41d4-a716-44665544000${index}`,
+  trackTitle: index === 0 ? 'Industrial Drum' : `Sample Track ${index + 1}`,
+  trackDuration: 180000,
+  author: index === 0 ? 'looplicator' : `Sample Artist ${index + 1}`,
 }))
 let mode = 'normal'
 let requests = []
@@ -31,20 +34,22 @@ http.createServer(async (request, response) => {
     response.end(JSON.stringify({ mode, requests, audioRequests }))
     return
   }
-  if (url.pathname === '/api-test/all') {
+  if (url.pathname === '/track/all') {
     response.setHeader('Content-Type', 'application/json')
     if (mode === 'list-error') { response.writeHead(500); response.end('{}'); return }
     response.end(JSON.stringify(mode === 'empty' ? [] : mode === 'malformed' ? [null] : tracks))
     return
   }
-  if (url.pathname.startsWith('/api-test/')) {
+  if (url.pathname.startsWith('/track/')) {
     requests.push(url.pathname)
     if (mode === 'playback-error') { response.writeHead(500); response.end('Track not found'); return }
     if (mode === 'race' && url.pathname.endsWith(tracks[0].trackId)) {
       await new Promise((resolve) => setTimeout(resolve, 1800))
     }
-    response.setHeader('Content-Type', 'text/plain')
-    response.end(`http://localhost:8081/audio/${url.pathname.split('/').at(-1)}.wav?signature=${requests.length}`)
+    response.setHeader('Content-Type', 'application/json')
+    response.end(JSON.stringify({
+      trackPresignedLink: `http://localhost:8081/audio/${url.pathname.split('/').at(-1)}.wav?signature=${requests.length}`,
+    }))
     return
   }
   if (url.pathname.startsWith('/audio/')) {

@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import { afterEach, test, mock } from 'node:test'
-import { getPlaybackUrl, getSigningEndpoint, getTracks } from '../src/lib/music-api.js'
+import { getAlbumTracks, getPlaybackUrl, getSigningEndpoint, getTracks } from '../src/lib/music-api.js'
 import { trackAuthor, trackDurationSeconds, trackLabel } from '../src/lib/tracks.js'
 
 afterEach(() => mock.restoreAll())
 const track = {
   bucketName: 'music-bucket', trackId: '550e8400-e29b-41d4-a716-446655440000',
   trackTitle: 'Industrial Drum', trackDuration: 12000, author: 'looplicator',
+  albumId: '00000000-0000-0000-0000-000000000001', albumTitle: 'Industrial Drum',
 }
 
 test('loads the documented track list and removes duplicate identities', async () => {
@@ -22,12 +23,39 @@ test('supports an empty database', async () => {
   assert.deepEqual(await getTracks(), [])
 })
 
+test('loads albums by UUID from the same direct-array contract', async () => {
+  mock.method(globalThis, 'fetch', async (url) => {
+    assert.equal(url, `/album/${track.albumId}/tracks`)
+    return Response.json([track, track])
+  })
+  assert.deepEqual(await getAlbumTracks(track.albumId), [track])
+})
+
+test('treats an empty or nonexistent album as an empty list', async () => {
+  mock.method(globalThis, 'fetch', async () => Response.json([]))
+  assert.deepEqual(await getAlbumTracks('00000000-0000-0000-0000-000000000099'), [])
+})
+
+test('escapes album path parameters and forwards cancellation', async () => {
+  const controller = new AbortController()
+  mock.method(globalThis, 'fetch', async (url, { signal }) => {
+    assert.equal(url, '/album/album%2Fid%3F/tracks')
+    controller.abort()
+    assert.equal(signal.aborted, true)
+    throw signal.reason
+  })
+  await assert.rejects(getAlbumTracks('album/id?', controller.signal), { name: 'AbortError' })
+})
+
 test('rejects malformed track responses before rendering', async () => {
   for (const body of [{ tracks: [] }, [null], [{ trackId: 'id' }],
     [{ ...track, trackTitle: {} }], [{ ...track, author: {} }],
-    [{ ...track, trackDuration: '12000' }], [{ ...track, trackDuration: -1 }]]) {
+    [{ ...track, trackDuration: '12000' }], [{ ...track, trackDuration: -1 }],
+    [{ ...track, albumId: null }], [{ ...track, albumId: '' }],
+    [{ ...track, albumTitle: {} }], [{ ...track, albumTitle: undefined }]]) {
     mock.method(globalThis, 'fetch', async () => Response.json(body))
     await assert.rejects(getTracks(), /unexpected track list/)
+    await assert.rejects(getAlbumTracks(track.albumId), /unexpected track list/)
     mock.restoreAll()
   }
 })
@@ -45,6 +73,7 @@ test('reads signed URLs from JSON and escapes both path parameters', async () =>
 test('does not depend on the backend error body contract', async () => {
   mock.method(globalThis, 'fetch', async () => new Response('<html>internal error</html>', { status: 500 }))
   await assert.rejects(getTracks(), /error \(500\)/)
+  await assert.rejects(getAlbumTracks(track.albumId), /error \(500\)/)
   await assert.rejects(getPlaybackUrl(track), /error \(500\)/)
 })
 

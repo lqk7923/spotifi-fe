@@ -7,6 +7,8 @@ const tracks = Array.from({ length: 9 }, (_, index) => ({
   trackTitle: index === 0 ? 'Industrial Drum' : `Sample Track ${index + 1}`,
   trackDuration: 180000,
   author: index === 0 ? 'looplicator' : `Sample Artist ${index + 1}`,
+  albumId: `00000000-0000-0000-0000-00000000000${index < 6 ? 1 : 2}`,
+  albumTitle: index < 6 ? 'Sample Album' : 'Weekend Album',
 }))
 let mode = 'normal'
 let requests = []
@@ -38,6 +40,12 @@ http.createServer(async (request, response) => {
     response.setHeader('Content-Type', 'application/json')
     if (mode === 'list-error') { response.writeHead(500); response.end('{}'); return }
     response.end(JSON.stringify(mode === 'empty' ? [] : mode === 'malformed' ? [null] : tracks))
+    return
+  }
+  if (url.pathname.startsWith('/album/')) {
+    response.setHeader('Content-Type', 'application/json')
+    const albumId = url.pathname.split('/')[2]
+    response.end(JSON.stringify(mode === 'empty' ? [] : tracks.filter((track) => track.albumId === albumId)))
     return
   }
   if (url.pathname.startsWith('/track/')) {

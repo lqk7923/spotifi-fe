@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spotifi — Preload benchmark</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #121212; color: #eee; }
+      body { max-width: 1040px; margin: 32px auto; padding: 0 24px; line-height: 1.6; }
+      h1 { line-height: 1.2; }
+      label { display: inline-flex; flex-direction: column; margin: 0 20px 16px 0; }
+      input, button, select { font: inherit; padding: 8px 12px; border-radius: 6px; border: 1px solid #555; }
+      input[type=number] { width: 110px; }
+      button { cursor: pointer; margin-right: 10px; }
+      button:disabled { opacity: .5; cursor: default; }
+      #run { background: #1ed760; color: #000; font-weight: 700; }
+      .note { color: #aaa; }
+      table { border-collapse: collapse; width: 100%; font-size: 14px; }
+      th, td { padding: 10px; border-bottom: 1px solid #444; text-align: right; }
+      th:first-child, td:first-child { text-align: left; }
+      .scroll { overflow-x: auto; }
+      pre { overflow: auto; max-height: 420px; font-size: 12px; background: #1c1c1c; padding: 16px; }
+      #status { min-height: 28px; }
+    </style>
+  </head>
+  <body>
+    <h1>Preload benchmark</h1>
+    <p>Đo từ lúc bắt đầu chọn bài đến sự kiện <code>playing</code> của audio, gồm lấy link hoặc ghi cache và chuẩn bị bộ giải mã. Audio được tắt tiếng.</p>
+    <p class="note">Đây là trang kiểm thử trên Vite dev server, không nằm trong bản build mặc định. Dừng nhạc ở tab khác, giữ tab này ở foreground. Khi đo có kiểm soát, mở DevTools → Network → Disable cache; ghi rõ cấu hình throttling. Không bật “Bypass for network” của Service Worker.</p>
+    <form id="settings">
+      <label>Nguồn dữ liệu<select id="source"><option value="backend">API thật / R2</option><option value="fixture">Fixture mô phỏng</option></select></label>
+      <label>Profile fixture<select id="profile"><option value="moderate">API 80 ms / audio 120 ms / 1 MB/s</option><option value="local">Local: không thêm độ trễ</option><option value="slow">API 200 ms / audio 200 ms / 256 KB/s</option></select></label>
+      <label>Số lần mỗi nhóm<input id="runs" type="number" min="3" max="100" value="20" required /></label>
+      <label>Chọn sau khi preload (ms)<input id="lead" type="number" min="0" max="5000" value="50" required /></label>
+      <label>Theo dõi sau phát (ms)<input id="observe" type="number" min="0" max="10000" value="1000" required /></label>
+      <label>Điều kiện mạng/cache<input id="environment" value="Current connection; HTTP cache uncontrolled" required /></label>
+      <div><button id="run" type="submit">Chạy benchmark</button><button id="stop" type="button" disabled>Dừng</button><button id="download" type="button" disabled>Tải JSON</button></div>
+    </form>
+    <p id="status" role="status">Sẵn sàng. Mỗi nhóm chạy thêm một lượt warm-up không tính vào kết quả.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Nhóm</th><th>Thành công/tổng</th><th>p50 phát (ms)</th><th>p95 phát (ms)</th><th>p50 lấy nguồn (ms)</th><th>p50 chuẩn bị (ms)</th><th>Cache hit</th><th>Chờ lại</th></tr></thead>
+        <tbody id="summary"></tbody>
+      </table>
+    </div>
+    <p id="comparison"></p>
+    <p class="note">“Ready” là trường hợp cache đã xong trước khi người dùng chọn bài; thời gian chuẩn bị được báo riêng, không tính vào độ trễ chọn → phát. “Early selection” chọn khi preload mới bắt đầu. Số byte preload là byte đã tải đủ vào prefix, không phải tổng traffic hay byte tải dở. p95 với ít mẫu chỉ có tính thăm dò. Sự kiện playing không đo độ trễ đến loa vật lý.</p>
+    <details><summary>Dữ liệu và phương pháp đo</summary><pre id="report"></pre></details>
+    <script type="module" src="./preload.js"></script>
+  </body>
+</html>

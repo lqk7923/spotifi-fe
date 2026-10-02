@@ -1,19 +1,29 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { filterTracks, trackKey } from '../src/lib/tracks.js'
+import { filterTracks, getAlbums, trackKey } from '../src/lib/tracks.js'
 import { greetingLabel, timeLabel } from '../src/lib/format.js'
 
 const tracks = [
-  { bucketName: 'drums', trackId: 'first', trackTitle: 'Industrial Drum', author: 'looplicator', trackDuration: 12000 },
-  { bucketName: 'ambient', trackId: 'second', trackTitle: 'Night Air', author: 'another artist', trackDuration: 90500 },
+  { bucketName: 'drums', trackId: 'first', trackTitle: 'Industrial Drum', author: 'looplicator', trackDuration: 12000, albumId: 'album-1', albumTitle: 'Factory Sounds' },
+  { bucketName: 'ambient', trackId: 'second', trackTitle: 'Night Air', author: 'another artist', trackDuration: 90500, albumId: 'album-2', albumTitle: 'Evening' },
 ]
 const filters = { bucket: '', likedOnly: false, likes: [], search: '' }
 
 test('library search matches API titles, authors, IDs, and collections', () => {
-  for (const search of [' INDUSTRIAL ', 'Looplicator', 'first', 'drums']) {
+  for (const search of [' INDUSTRIAL ', 'Looplicator', 'first', 'drums', 'Factory Sounds', 'album-1']) {
     assert.deepEqual(filterTracks(tracks, { ...filters, search }), [tracks[0]])
   }
   assert.deepEqual(filterTracks(tracks, { ...filters, search: 'missing' }), [])
+})
+
+test('groups albums by identity even when titles or buckets are shared', () => {
+  const duplicate = { ...tracks[0], trackId: 'third', bucketName: 'another-bucket' }
+  const sameTitle = { ...tracks[1], albumTitle: tracks[0].albumTitle }
+  assert.deepEqual(getAlbums([tracks[0], duplicate, sameTitle]), [
+    { albumId: 'album-1', albumTitle: 'Factory Sounds', author: 'looplicator' },
+    { albumId: 'album-2', albumTitle: 'Factory Sounds', author: 'another artist' },
+  ])
+  assert.deepEqual(getAlbums([]), [])
 })
 
 test('library combines likes and collection filters without changing the playback list', () => {

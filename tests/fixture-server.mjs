@@ -47,7 +47,12 @@ http.createServer(async (request, response) => {
     if (mode === 'album-not-found') { response.writeHead(404); response.end('{}'); return }
     if (mode === 'album-error') { response.writeHead(500); response.end('{}'); return }
     const albumId = url.pathname.split('/')[2]
-    response.end(JSON.stringify(mode === 'empty' ? [] : tracks.filter((track) => track.albumId === albumId)))
+    let albumTracks = tracks.filter((track) => track.albumId === albumId)
+    if (mode === 'album-switch') {
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+      if (albumId.endsWith('2')) albumTracks = albumTracks.slice(0, 1)
+    }
+    response.end(JSON.stringify(mode === 'empty' ? [] : albumTracks))
     return
   }
   if (url.pathname.startsWith('/track/')) {

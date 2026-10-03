@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export default function OverlayScrollbar({ scrollRef }) {
+export default function OverlayScrollbar({ scrollRef, label = 'Scroll page' }) {
   const [metrics, setMetrics] = useState({ max: 0, value: 0, thumbSize: 36 })
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function OverlayScrollbar({ scrollRef }) {
 
   return (
     <input
-      className="overlay-scrollbar" type="range" aria-label="Scroll page" aria-orientation="vertical"
+      className="overlay-scrollbar" type="range" aria-label={label} aria-orientation="vertical"
       min="0" max={metrics.max} step="any" value={metrics.value}
       style={{ '--scroll-thumb-size': `${metrics.thumbSize}px` }}
       onChange={(event) => { scrollRef.current.scrollTop = Number(event.target.value) }}

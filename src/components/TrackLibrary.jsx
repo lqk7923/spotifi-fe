@@ -25,7 +25,11 @@ function TrackRow({ track, index, player, library }) {
       </td>
       <td>
         <TrackPlayButton track={track} player={player} className="track-title-cell">
-          <Artwork track={track} small />
+          {library.selectedAlbum ? (
+            <span className="track-play-mark" aria-hidden="true">
+              <TrackPlaybackIcon selected={selected} player={player} size={20} />
+            </span>
+          ) : <Artwork track={track} small />}
           <span><strong>{trackLabel(track)}</strong><small title={subtitle}>{subtitle}</small></span>
         </TrackPlayButton>
         {!library.selectedAlbum && (

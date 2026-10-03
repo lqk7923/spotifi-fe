@@ -4,7 +4,7 @@ const palettes = [
 ]
 
 export function artworkColors(track) {
-  const hash = [...(track?.trackId || 'music')]
+  const hash = [...(track?.albumId || track?.trackId || 'music')]
     .reduce((sum, letter) => sum + letter.charCodeAt(0), 0)
   return palettes[hash % palettes.length]
 }

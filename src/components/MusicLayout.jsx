@@ -48,7 +48,7 @@ export default function MusicLayout({ albumId, page: Page }) {
         </div>
         <OverlayScrollbar scrollRef={mainRef} />
       </main>
-      <PlaybackQueue tracks={library.collectionTracks} player={player} open={queueOpen} onClose={() => setQueueOpen(false)} />
+      <PlaybackQueue tracks={library.collectionTracks} library={library} player={player} open={queueOpen} onClose={() => setQueueOpen(false)} />
       <PlayerBar
         audioRef={audioRef} player={player} library={library}
         queueOpen={queueOpen} onToggleQueue={() => setQueueOpen((value) => !value)}

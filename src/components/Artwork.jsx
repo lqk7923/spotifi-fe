@@ -14,7 +14,7 @@ export default function Artwork({ track, small = false }) {
       <div className="vinyl"><span /></div>
       <AudioLines className="cover-wave" />
       <span className="cover-id">
-        {track?.trackId.slice(0, 4).toUpperCase() || 'MUSIC'}
+        {track?.trackId?.slice(0, 4).toUpperCase() || 'MUSIC'}
       </span>
     </div>
   )

@@ -1,4 +1,4 @@
-import { isValidTrack, trackKey } from './tracks.js'
+import { isValidAlbum, isValidTrack, trackKey } from './tracks.js'
 
 // Accept a backend root or the previously documented /track prefix.
 const apiBase = (import.meta.env?.VITE_API_BASE_URL || '').replace(/\/+$/, '').replace(/\/track$/, '')
@@ -31,8 +31,18 @@ export function getTracks(signal) {
   return getTrackList('/track/all', signal)
 }
 
-export function getAlbumTracks(albumId, signal) {
-  return getTrackList(`/album/${encodeURIComponent(albumId)}/tracks`, signal)
+/**
+ * @param {string} albumId
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<import('./tracks.js').AlbumInfo>}
+ */
+export async function getAlbumTracks(albumId, signal) {
+  const response = await request(`/album/${encodeURIComponent(albumId)}/tracks`, signal)
+  const album = await response.json()
+  if (!isValidAlbum(album)) {
+    throw new Error('The music server returned an unexpected album.')
+  }
+  return album
 }
 
 export async function getPlaybackUrl(track, signal) {

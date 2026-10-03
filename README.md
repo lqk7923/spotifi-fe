@@ -25,7 +25,7 @@ To change the backend address, copy `.env.example` to `.env.local` and set
 ## Music API
 
 - `GET /track/all`: direct JSON array of `{ bucketName, trackId, trackTitle, trackDuration, author, albumId, albumTitle }`. `trackDuration` is milliseconds (for example, `12000` means 12 seconds). `author` is the album author; only tracks with a matching album are returned.
-- `GET /album/{albumId}/tracks`: direct array with the same track structure. Opening an album in the sidebar or track table fetches this endpoint using the UUID from the track response. An empty result (`[]`) or HTTP 404 displays a centered "Could not find that album" message. Network and server failures retain the retry state.
+- `GET /album/{albumId}/tracks`: JSON album object `{ albumId, albumTitle, author, albumTracks }`. Each item in `albumTracks` contains `{ bucketName, trackId, trackTitle, trackDuration }`. Opening an album in the sidebar or track table fetches this endpoint using the UUID from the track response. The header reads the album's title and author directly; tracks inherit these fields and `albumId` for playback, search, and the queue. The backend returns an error for empty or nonexistent albums. HTTP 404 displays "Could not find that album". Network and server failures retain the retry state.
 - `GET /track/{bucket}/{trackId}`: JSON `{ "trackPresignedLink": "https://..." }`, valid for two minutes. Both path parameters are URL-encoded.
 
 The page uses real API titles, authors, and durations with generated cover illustrations.

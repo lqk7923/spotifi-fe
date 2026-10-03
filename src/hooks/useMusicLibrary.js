@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { errorMessage, getAlbumTracks, getTracks } from '../lib/music-api.js'
-import { filterTracks, getAlbums, trackKey } from '../lib/tracks.js'
+import { filterTracks, getAlbumQueue, getAlbums, trackKey } from '../lib/tracks.js'
 import { navigate } from '../lib/navigation.js'
 
 const LIKES_STORAGE_KEY = 'music-likes'
@@ -23,7 +23,7 @@ export default function useMusicLibrary(albumId) {
   const search = filters.scope === albumId ? filters.search : ''
   const likedOnly = filters.scope === albumId ? filters.likedOnly : false
   const setSearch = (value) => setFilters({ scope: albumId, search: value, likedOnly })
-  const [albumState, setAlbumState] = useState({ tracks: [], error: '' })
+  const [albumState, setAlbumState] = useState({ album: null, tracks: [], error: '' })
   const [albumReload, setAlbumReload] = useState(0)
   const [likes, setLikes] = useState(readLikes)
 
@@ -50,12 +50,12 @@ export default function useMusicLibrary(albumId) {
     getAlbumTracks(albumId, controller.signal)
       .then((result) => {
         if (!controller.signal.aborted) {
-          setAlbumState({ albumId, reload: albumReload, tracks: result, error: '' })
+          setAlbumState({ albumId, reload: albumReload, album: result, tracks: getAlbumQueue(result), error: '' })
         }
       })
       .catch((cause) => {
         if (!controller.signal.aborted) {
-          setAlbumState({ albumId, reload: albumReload, tracks: [], notFound: cause.status === 404, error: errorMessage(cause, 'Could not load this album.') })
+          setAlbumState({ albumId, reload: albumReload, album: null, tracks: [], notFound: cause.status === 404, error: errorMessage(cause, 'Could not load this album.') })
         }
       })
     return () => controller.abort()
@@ -100,14 +100,14 @@ export default function useMusicLibrary(albumId) {
   const albums = getAlbums(tracks)
   const albumReady = albumState.albumId === albumId && albumState.reload === albumReload
   const collectionTracks = albumId ? albumReady ? albumState.tracks : [] : tracks
-  const selectedAlbum = albumId ? collectionTracks[0] || albums.find((album) => album.albumId === albumId) || { albumId } : null
+  const selectedAlbum = albumId ? (albumReady && albumState.album) || albums.find((album) => album.albumId === albumId) || { albumId } : null
   const visibleTracks = filterTracks(collectionTracks, { likedOnly, likes, search })
   const likedCount = tracks.filter(isLiked).length
 
   return {
     tracks, collectionTracks, visibleTracks, albums,
     loading: albumId ? !albumReady : loading,
-    albumNotFound: !!albumId && albumReady && (albumState.notFound === true || (!albumState.error && !albumState.tracks.length)),
+    albumNotFound: !!albumId && albumReady && albumState.notFound === true,
     error: albumId ? albumReady ? albumState.error : '' : error, refresh,
     selectedAlbum,
     search, setSearch, likedOnly, showLiked,

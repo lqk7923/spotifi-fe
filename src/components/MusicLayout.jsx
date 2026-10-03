@@ -11,7 +11,7 @@ import { artworkColors } from '../lib/artwork.js'
 export default function MusicLayout({ albumId, page: Page }) {
   const library = useMusicLibrary(albumId)
   const albumLoading = !!albumId && library.loading
-  const albumColors = albumId ? artworkColors(library.collectionTracks[0]) : null
+  const albumColors = albumId ? artworkColors(library.selectedAlbum) : null
   const audioRef = useRef(null)
   const player = useAudioPlayer(library.collectionTracks, audioRef)
   const [queueOpen, setQueueOpen] = useState(false)

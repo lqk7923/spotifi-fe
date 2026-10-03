@@ -6,13 +6,14 @@
   --panel-gap: 8px;
   display: grid;
   grid-template-columns: 222px minmax(0, 1fr) 240px;
-  grid-template-rows: var(--header-height) minmax(0, 1fr) var(--player-height);
+  grid-template-rows: calc(var(--header-height) + var(--panel-gap)) minmax(0, 1fr) var(--player-height);
   grid-template-areas:
     'header header header'
     'sidebar main queue'
     'player player player';
   height: 100dvh;
-  gap: var(--panel-gap);
+  column-gap: var(--panel-gap);
+  row-gap: 0;
   padding-inline: var(--panel-gap);
   overflow: hidden;
   background: #000;
@@ -287,6 +288,7 @@
 
 .topbar {
   grid-area: header;
+  margin-bottom: var(--panel-gap);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1433,7 +1435,7 @@ h2 {
     display: block;
     position: fixed;
     top: calc(var(--header-height) + var(--panel-gap));
-    bottom: calc(var(--player-height) + var(--panel-gap));
+    bottom: var(--player-height);
     right: var(--panel-gap);
     width: 280px;
     height: auto;

@@ -26,7 +26,7 @@ export default function AlbumPage({ library, player, libraryRef }) {
   return (
     <>
       <section className="album-hero" aria-labelledby="album-title">
-        <Artwork track={collectionTracks[0]} />
+        <Artwork track={collectionTracks[0] || selectedAlbum} />
         <div className="album-details">
           <p className="eyebrow">ALBUM</p>
           <h1 id="album-title">{selectedAlbum.albumTitle || 'Album'}</h1>

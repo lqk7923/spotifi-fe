@@ -1,13 +1,21 @@
 import assert from 'node:assert/strict'
 import { afterEach, test, mock } from 'node:test'
 import { getAlbumTracks, getPlaybackUrl, getSigningEndpoint, getTracks } from '../src/lib/music-api.js'
-import { trackAuthor, trackDurationSeconds, trackLabel } from '../src/lib/tracks.js'
+import { getAlbumQueue, trackAuthor, trackDurationSeconds, trackLabel } from '../src/lib/tracks.js'
 
 afterEach(() => mock.restoreAll())
 const track = {
   bucketName: 'music-bucket', trackId: '550e8400-e29b-41d4-a716-446655440000',
   trackTitle: 'Industrial Drum', trackDuration: 12000, author: 'looplicator',
   albumId: '00000000-0000-0000-0000-000000000001', albumTitle: 'Industrial Drum',
+}
+const albumTrack = {
+  bucketName: track.bucketName, trackId: track.trackId,
+  trackTitle: track.trackTitle, trackDuration: track.trackDuration,
+}
+const album = {
+  albumId: track.albumId, albumTitle: track.albumTitle,
+  author: track.author, albumTracks: [albumTrack],
 }
 
 test('loads the documented track list and removes duplicate identities', async () => {
@@ -23,17 +31,51 @@ test('supports an empty database', async () => {
   assert.deepEqual(await getTracks(), [])
 })
 
-test('loads albums by UUID from the same direct-array contract', async () => {
+test('loads album metadata and nested tracks from the album endpoint', async () => {
   mock.method(globalThis, 'fetch', async (url) => {
     assert.equal(url, `/album/${track.albumId}/tracks`)
-    return Response.json([track, track])
+    return Response.json(album)
   })
-  assert.deepEqual(await getAlbumTracks(track.albumId), [track])
+  const result = await getAlbumTracks(track.albumId)
+  assert.deepEqual(result, album)
+  assert.deepEqual(getAlbumQueue(result), [track])
+  assert.equal(result.albumTracks[0].albumId, undefined)
 })
 
-test('treats an empty or nonexistent album as an empty list', async () => {
-  mock.method(globalThis, 'fetch', async () => Response.json([]))
-  assert.deepEqual(await getAlbumTracks('00000000-0000-0000-0000-000000000099'), [])
+test('keeps album track order and deduplicates queue identities within buckets', async () => {
+  const secondTrack = { ...albumTrack, trackId: 'second-track' }
+  const otherBucket = { ...albumTrack, bucketName: 'another-bucket' }
+  const responseAlbum = { ...album, albumTracks: [secondTrack, albumTrack, albumTrack, otherBucket] }
+  mock.method(globalThis, 'fetch', async () => Response.json(responseAlbum))
+  assert.deepEqual(getAlbumQueue(await getAlbumTracks(track.albumId)), [
+    { ...track, trackId: 'second-track' }, track, { ...track, bucketName: 'another-bucket' },
+  ])
+})
+
+test('uses album metadata for queue entries even if a track contains stale album fields', () => {
+  const responseAlbum = {
+    ...album, albumTitle: 'Updated album', author: 'Updated artist', albumTracks: [track],
+  }
+  assert.deepEqual(getAlbumQueue(responseAlbum), [{
+    ...track, albumTitle: 'Updated album', author: 'Updated artist',
+  }])
+  assert.equal(responseAlbum.albumTracks[0].albumTitle, track.albumTitle)
+})
+
+test('rejects old array responses and malformed album metadata or nested tracks', async () => {
+  const invalidTracks = [null, {}, { ...albumTrack, bucketName: '' },
+    { ...albumTrack, trackId: '' }, { ...albumTrack, trackTitle: {} },
+    { ...albumTrack, trackTitle: undefined }, { ...albumTrack, trackDuration: '12000' },
+    { ...albumTrack, trackDuration: -1 }, { ...albumTrack, trackDuration: undefined }]
+  for (const body of [null, [], [track], {}, { ...album, albumId: null },
+    { ...album, albumId: ' ' }, { ...album, albumTitle: undefined },
+    { ...album, albumTitle: {} }, { ...album, author: undefined }, { ...album, author: {} },
+    { ...album, albumTracks: undefined }, { ...album, albumTracks: {} },
+    ...invalidTracks.map((entry) => ({ ...album, albumTracks: [entry] }))]) {
+    mock.method(globalThis, 'fetch', async () => Response.json(body))
+    await assert.rejects(getAlbumTracks(track.albumId), /unexpected album/)
+    mock.restoreAll()
+  }
 })
 
 test('preserves HTTP status so missing albums are distinct from server failures', async () => {
@@ -63,7 +105,6 @@ test('rejects malformed track responses before rendering', async () => {
     [{ ...track, albumTitle: {} }], [{ ...track, albumTitle: undefined }]]) {
     mock.method(globalThis, 'fetch', async () => Response.json(body))
     await assert.rejects(getTracks(), /unexpected track list/)
-    await assert.rejects(getAlbumTracks(track.albumId), /unexpected track list/)
     mock.restoreAll()
   }
 })

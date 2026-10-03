@@ -14,7 +14,7 @@ export default function PlaybackQueue({ tracks, library, player, open, onClose }
   const currentIndex = tracks.findIndex((track) => trackKey(track) === currentKey)
   const upcomingTracks = tracks.slice(currentIndex + 1)
   const albumPreview = library.selectedAlbum && !library.albumNotFound
-    ? tracks[0] || library.tracks.find((track) => track.albumId === library.selectedAlbum.albumId)
+    ? library.selectedAlbum
     : null
   const cardTrack = player.currentTrack || albumPreview
   let status = 'Ready when you are'

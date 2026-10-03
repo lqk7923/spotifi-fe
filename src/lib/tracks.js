@@ -1,12 +1,22 @@
 /**
- * @typedef {Object} Track
+ * @typedef {Object} AlbumTrack
  * @property {string} bucketName
  * @property {string} trackId
  * @property {string} trackTitle
  * @property {number} trackDuration Duration in milliseconds.
- * @property {string} author Album author supplied by the API.
+ */
+
+/**
+ * @typedef {Object} AlbumInfo
  * @property {string} albumId
  * @property {string} albumTitle
+ * @property {string} author
+ * @property {AlbumTrack[]} albumTracks
+ */
+
+/**
+ * Track metadata from /track/all or inherited from the album for playback.
+ * @typedef {AlbumTrack & { author: string, albumId: string, albumTitle: string }} Track
  */
 
 export function trackKey(track) {
@@ -39,6 +49,30 @@ export function isValidTrack(track) {
     return Number.isFinite(track.trackDuration) && track.trackDuration >= 0
   }
   return true
+}
+
+/** @param {AlbumInfo} album */
+export function isValidAlbum(album) {
+  if (!album || Array.isArray(album)) return false
+  if (typeof album.albumId !== 'string' || !album.albumId.trim()) return false
+  if (typeof album.albumTitle !== 'string' || typeof album.author !== 'string') return false
+  return Array.isArray(album.albumTracks) && album.albumTracks.every((track) => (
+    !!track && !Array.isArray(track)
+    && typeof track.bucketName === 'string' && !!track.bucketName
+    && typeof track.trackId === 'string' && !!track.trackId
+    && typeof track.trackTitle === 'string'
+    && Number.isFinite(track.trackDuration) && track.trackDuration >= 0
+  ))
+}
+
+/**
+ * @param {AlbumInfo} album
+ * @returns {Track[]}
+ */
+export function getAlbumQueue(album) {
+  const { albumId, albumTitle, author } = album
+  const tracks = album.albumTracks.map((track) => ({ ...track, albumId, albumTitle, author }))
+  return [...new Map(tracks.map((track) => [trackKey(track), track])).values()]
 }
 
 export function filterTracks(tracks, { bucket, likedOnly, likes, search }) {

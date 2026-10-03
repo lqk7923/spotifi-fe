@@ -36,6 +36,14 @@ test('treats an empty or nonexistent album as an empty list', async () => {
   assert.deepEqual(await getAlbumTracks('00000000-0000-0000-0000-000000000099'), [])
 })
 
+test('preserves HTTP status so missing albums are distinct from server failures', async () => {
+  for (const status of [404, 500]) {
+    mock.method(globalThis, 'fetch', async () => new Response('Not found or unavailable', { status }))
+    await assert.rejects(getAlbumTracks(track.albumId), (error) => error.status === status)
+    mock.restoreAll()
+  }
+})
+
 test('escapes album path parameters and forwards cancellation', async () => {
   const controller = new AbortController()
   mock.method(globalThis, 'fetch', async (url, { signal }) => {

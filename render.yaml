@@ -1,0 +1,13 @@
+# Apply through a Render Blueprint. Existing manually created sites must add
+# the same rewrite in Dashboard > Redirects/Rewrites; a code deploy alone
+# does not apply this file's hosting configuration.
+services:
+  - type: web
+    name: spotifi-music-for-life
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

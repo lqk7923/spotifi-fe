@@ -44,6 +44,8 @@ http.createServer(async (request, response) => {
   }
   if (url.pathname.startsWith('/album/')) {
     response.setHeader('Content-Type', 'application/json')
+    if (mode === 'album-not-found') { response.writeHead(404); response.end('{}'); return }
+    if (mode === 'album-error') { response.writeHead(500); response.end('{}'); return }
     const albumId = url.pathname.split('/')[2]
     response.end(JSON.stringify(mode === 'empty' ? [] : tracks.filter((track) => track.albumId === albumId)))
     return

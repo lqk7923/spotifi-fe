@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
     },
   }
   return {
+    appType: 'spa',
     plugins: [react(), tailwindcss(), benchmarkFixture()],
     server: { proxy },
     preview: { proxy },

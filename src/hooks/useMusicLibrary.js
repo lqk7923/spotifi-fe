@@ -55,7 +55,7 @@ export default function useMusicLibrary(albumId) {
       })
       .catch((cause) => {
         if (!controller.signal.aborted) {
-          setAlbumState({ albumId, reload: albumReload, tracks: [], error: errorMessage(cause, 'Could not load this album.') })
+          setAlbumState({ albumId, reload: albumReload, tracks: [], notFound: cause.status === 404, error: errorMessage(cause, 'Could not load this album.') })
         }
       })
     return () => controller.abort()
@@ -107,6 +107,7 @@ export default function useMusicLibrary(albumId) {
   return {
     tracks, collectionTracks, visibleTracks, albums,
     loading: albumId ? !albumReady : loading,
+    albumNotFound: !!albumId && albumReady && (albumState.notFound === true || (!albumState.error && !albumState.tracks.length)),
     error: albumId ? albumReady ? albumState.error : '' : error, refresh,
     selectedAlbum,
     search, setSearch, likedOnly, showLiked,

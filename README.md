@@ -25,7 +25,7 @@ To change the backend address, copy `.env.example` to `.env.local` and set
 ## Music API
 
 - `GET /track/all`: direct JSON array of `{ bucketName, trackId, trackTitle, trackDuration, author, albumId, albumTitle }`. `trackDuration` is milliseconds (for example, `12000` means 12 seconds). `author` is the album author; only tracks with a matching album are returned.
-- `GET /album/{albumId}/tracks`: direct array with the same track structure. Opening an album in the sidebar or track table fetches this endpoint using the UUID from the track response. An empty or nonexistent album returns `[]` and displays an empty album state.
+- `GET /album/{albumId}/tracks`: direct array with the same track structure. Opening an album in the sidebar or track table fetches this endpoint using the UUID from the track response. An empty result (`[]`) or HTTP 404 displays a centered "Could not find that album" message. Network and server failures retain the retry state.
 - `GET /track/{bucket}/{trackId}`: JSON `{ "trackPresignedLink": "https://..." }`, valid for two minutes. Both path parameters are URL-encoded.
 
 The page uses real API titles, authors, and durations with generated cover illustrations.
@@ -133,6 +133,35 @@ Configure a reverse proxy for `/track` and `/album/{uuid}/tracks` API requests,
 or set `VITE_API_BASE_URL` to the backend root before building
 and allow the frontend origin through backend CORS. The browser must be able to access
 the signed R2 audio URL directly; the backend signing endpoint does not stream audio.
+
+### Render deployment and direct album links
+
+The repository includes `render.yaml` for a Render Static Site Blueprint with an
+SPA rewrite. Home (`/`) and Album (`/album/{uuid}`) are independent page routes;
+the server must serve `index.html` for a direct album request so React can render
+the Album page and fetch its tracks without first visiting Home.
+
+For the existing `spotifi-music-for-life` site, open **Render Dashboard > Static
+Site > Redirects/Rewrites** and add this rule:
+
+| Source | Destination | Action |
+| --- | --- | --- |
+| `/*` | `/index.html` | Rewrite |
+
+Use **Rewrite** so the browser retains `/album/{uuid}`. A Redirect to `/` would
+instead render Home. Render serves existing files before applying rewrite rules,
+so the JS/CSS assets and `audio-preload-worker.js` continue to load normally.
+See [Render's redirect/rewrite documentation](https://render.com/docs/redirects-rewrites).
+
+**Deploying code alone does not apply `render.yaml` to a manually created site.**
+Either add the Dashboard rule above or link/sync the existing service through a
+[Render Blueprint](https://render.com/docs/infrastructure-as-code). Keep the
+existing `VITE_API_BASE_URL` set to the public backend root when building: Vite's
+development proxy is not available on a Render Static Site.
+
+After applying the rule, open `/album/00000000-0000-0000-0000-000000000001`
+in a new tab and reload it. Both requests should return HTML with status 200 and
+display the Album page; `/` should still display Home.
 
 ## Source structure
 

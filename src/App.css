@@ -1,20 +1,28 @@
 .music-app {
   --green: #1ed760;
   --muted: #a7a7a7;
-  --player-height: 96px;
+  --header-height: 72px;
+  --player-height: 87px;
   display: grid;
   grid-template-columns: 222px minmax(0, 1fr) 240px;
+  grid-template-rows: var(--header-height) minmax(0, 1fr) var(--player-height);
+  grid-template-areas:
+    'header header header'
+    'sidebar main queue'
+    'player player player';
   height: 100dvh;
   overflow: hidden;
   font-size: 14px;
 }
 
 .sidebar {
+  grid-area: sidebar;
   background: #000;
   padding: 30px 18px 22px;
   display: flex;
   flex-direction: column;
-  height: calc(100dvh - var(--player-height));
+  height: 100%;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -26,7 +34,7 @@
   font-weight: 750;
   letter-spacing: -1.1px;
   padding: 0 8px;
-  margin-bottom: 32px;
+  flex-shrink: 0;
 }
 
 .brand-dot {
@@ -154,25 +162,32 @@
 }
 
 .main-content {
-  height: calc(100dvh - var(--player-height));
+  grid-area: main;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
   overflow-y: auto;
   background: linear-gradient(180deg, #32297b 0, #25204e 190px, #17151e 335px, #121212 445px);
   scrollbar-gutter: stable;
 }
 
 .topbar {
+  grid-area: header;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-  padding: 22px 30px 18px;
+  padding: 12px 24px;
+  background: #000;
 }
 
 .search-field.input {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: min(320px, 65%);
+  width: min(520px, 100%);
+  min-width: 0;
+  margin-inline: auto;
   height: 39px;
   border: 1px solid #ffffff16;
   border-radius: 24px;
@@ -686,6 +701,41 @@ h2 {
   background: linear-gradient(180deg, #382b51, #201c29);
 }
 
+.main-content.album-loading {
+  background: #000;
+}
+
+.main-content.album-unavailable {
+  display: flex;
+  flex-direction: column;
+  background: #121212;
+}
+
+.album-not-found {
+  flex: 1;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.album-not-found h1 {
+  margin: 0;
+  font-size: clamp(28px, 3vw, 42px);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -1px;
+}
+
+.album-not-found p {
+  margin: 0;
+  font-size: 18px;
+}
+
 .album-hero > .track-art {
   width: clamp(120px, 18vw, 220px);
   flex-shrink: 0;
@@ -905,7 +955,9 @@ h2 {
 }
 
 .queue-panel {
-  height: calc(100dvh - var(--player-height));
+  grid-area: queue;
+  height: 100%;
+  min-height: 0;
   background: #000;
   padding: 30px 21px;
   overflow-y: auto;
@@ -1050,17 +1102,16 @@ h2 {
 }
 
 .player-bar {
+  grid-area: player;
   height: var(--player-height);
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  min-width: 0;
+  position: relative;
   background: #181818;
   border-top: 1px solid #2a2a2a;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 1.6fr) minmax(0, 1fr);
   align-items: center;
-  padding: 12px 20px;
+  padding: 10px 20px;
   gap: 24px;
   z-index: 30;
 }
@@ -1240,7 +1291,17 @@ h2 {
 
 @media (max-width: 1300px) {
   .music-app {
-    grid-template-columns: 210px minmax(0, 1fr);
+    grid-template-columns: 210px minmax(0, 1fr) 220px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .music-app {
+    grid-template-columns: 190px minmax(0, 1fr);
+    grid-template-areas:
+      'header header'
+      'sidebar main'
+      'player player';
   }
   .queue-panel {
     display: none;
@@ -1248,9 +1309,11 @@ h2 {
   .queue-panel.queue-open {
     display: block;
     position: fixed;
-    top: 0;
+    top: var(--header-height);
+    bottom: var(--player-height);
     right: 0;
     width: 280px;
+    height: auto;
     z-index: 20;
     box-shadow: -20px 0 60px #0009;
     border-left: 1px solid #282828;
@@ -1311,7 +1374,6 @@ h2 {
   .brand {
     padding: 0;
     justify-content: center;
-    margin-bottom: 27px;
   }
   .brand > span, .sidebar-library, .sidebar-bottom, .nav-count {
     display: none;
@@ -1330,7 +1392,6 @@ h2 {
   }
   .topbar {
     gap: 10px;
-    padding-top: 18px;
   }
   .search-field.input {
     width: 100%;
@@ -1407,7 +1468,6 @@ h2 {
     width: 150px;
   }
   .music-app {
-    --player-height: 110px;
     grid-template-columns: 56px minmax(0, 1fr);
   }
   .sidebar {
@@ -1547,9 +1607,9 @@ h2 {
   }
   .player-bar {
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: 54px 24px;
+    grid-template-rows: 40px 26px;
     gap: 4px 8px;
-    padding: 12px;
+    padding: 8px 12px;
   }
   .player-center {
     display: contents;
@@ -1579,6 +1639,10 @@ h2 {
   .player-extras {
     grid-column: 2;
     grid-row: 2;
+  }
+  .player-extras .icon-button {
+    width: 26px;
+    height: 26px;
   }
   .player-track strong {
     font-size: 14px;

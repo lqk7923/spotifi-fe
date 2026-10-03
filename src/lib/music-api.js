@@ -11,7 +11,9 @@ async function request(path, signal) {
       : AbortSignal.timeout(15000),
   })
   if (!response.ok) {
-    throw new Error(`The music server returned an error (${response.status}). Please try again.`)
+    const error = new Error(`The music server returned an error (${response.status}). Please try again.`)
+    error.status = response.status
+    throw error
   }
   return response
 }

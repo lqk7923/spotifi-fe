@@ -1,10 +1,26 @@
+import { CircleAlert } from 'lucide-react'
 import Artwork from '../components/Artwork.jsx'
 import TrackLibrary from '../components/TrackLibrary.jsx'
 import { timeLabel } from '../lib/format.js'
 import { trackDurationSeconds } from '../lib/tracks.js'
 
 export default function AlbumPage({ library, player, libraryRef }) {
-  const { selectedAlbum, collectionTracks, loading, error } = library
+  const { selectedAlbum, collectionTracks, loading, error, albumNotFound } = library
+
+  if (loading) {
+    return <p className="sr-only" role="status">Loading album…</p>
+  }
+
+  if (albumNotFound) {
+    return (
+      <section className="album-not-found" aria-labelledby="album-not-found-title" role="status">
+        <CircleAlert size={72} strokeWidth={2} aria-hidden="true" />
+        <h1 id="album-not-found-title">Could not find that album</h1>
+        <p>Search for something else?</p>
+      </section>
+    )
+  }
+
   const duration = collectionTracks.reduce((total, track) => total + (trackDurationSeconds(track) || 0), 0)
 
   return (

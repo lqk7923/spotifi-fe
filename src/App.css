@@ -3,6 +3,7 @@
   --muted: #a7a7a7;
   --header-height: 72px;
   --player-height: 87px;
+  --panel-gap: 8px;
   display: grid;
   grid-template-columns: 222px minmax(0, 1fr) 240px;
   grid-template-rows: var(--header-height) minmax(0, 1fr) var(--player-height);
@@ -11,13 +12,24 @@
     'sidebar main queue'
     'player player player';
   height: 100dvh;
+  gap: var(--panel-gap);
+  padding-inline: var(--panel-gap);
   overflow: hidden;
+  background: #000;
   font-size: 14px;
+}
+
+.sidebar, .main-content, .queue-panel {
+  border-radius: 10px;
+}
+
+.topbar, .player-bar {
+  margin-inline: calc(-1 * var(--panel-gap));
 }
 
 .sidebar {
   grid-area: sidebar;
-  background: #000;
+  background: #121212;
   padding: 30px 18px 22px;
   display: flex;
   flex-direction: column;
@@ -958,7 +970,7 @@ h2 {
   grid-area: queue;
   height: 100%;
   min-height: 0;
-  background: #000;
+  background: #121212;
   padding: 30px 21px;
   overflow-y: auto;
 }
@@ -1309,9 +1321,9 @@ h2 {
   .queue-panel.queue-open {
     display: block;
     position: fixed;
-    top: var(--header-height);
-    bottom: var(--player-height);
-    right: 0;
+    top: calc(var(--header-height) + var(--panel-gap));
+    bottom: calc(var(--player-height) + var(--panel-gap));
+    right: var(--panel-gap);
     width: 280px;
     height: auto;
     z-index: 20;
@@ -1651,7 +1663,7 @@ h2 {
     font-size: 12px;
   }
   .queue-panel.queue-open {
-    width: min(280px, calc(100vw - 56px));
+    width: min(280px, calc(100vw - 56px - 3 * var(--panel-gap)));
   }
 }
 

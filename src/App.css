@@ -178,9 +178,70 @@
   height: 100%;
   min-height: 0;
   min-width: 0;
-  overflow-y: auto;
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(180deg, #32297b 0, #25204e 190px, #17151e 335px, #121212 445px);
-  scrollbar-gutter: stable;
+}
+
+.main-scroll {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  background: inherit;
+  background-attachment: local;
+}
+
+.main-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.main-page {
+  min-height: 100%;
+}
+
+.overlay-scrollbar {
+  position: absolute;
+  inset: 6px 2px 6px auto;
+  z-index: 5;
+  width: 8px;
+  height: calc(100% - 12px);
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  writing-mode: vertical-lr;
+  direction: ltr;
+  background: transparent;
+  cursor: pointer;
+  opacity: .5;
+}
+
+.overlay-scrollbar:hover, .overlay-scrollbar:focus-visible {
+  opacity: 1;
+}
+
+.overlay-scrollbar::-webkit-slider-thumb {
+  appearance: none;
+  width: 8px;
+  height: var(--scroll-thumb-size);
+  border: 0;
+  border-radius: 8px;
+  background: #ffffff70;
+}
+
+.overlay-scrollbar::-moz-range-thumb {
+  width: 8px;
+  height: var(--scroll-thumb-size);
+  border: 0;
+  border-radius: 8px;
+  background: #ffffff70;
+}
+
+.overlay-scrollbar::-moz-range-track {
+  background: transparent;
+}
+
+.main-content.album-page {
+  background: linear-gradient(180deg, var(--album-color), color-mix(in srgb, var(--album-color) 35%, #121212) 320px, #121212 650px);
 }
 
 .topbar {
@@ -710,7 +771,7 @@ h2 {
   align-items: flex-end;
   gap: 28px;
   padding: 28px 36px 36px;
-  background: linear-gradient(180deg, #382b51, #201c29);
+  background: transparent;
 }
 
 .main-content.album-loading {
@@ -718,9 +779,12 @@ h2 {
 }
 
 .main-content.album-unavailable {
+  background: #121212;
+}
+
+.album-unavailable .main-page {
   display: flex;
   flex-direction: column;
-  background: #121212;
 }
 
 .album-not-found {

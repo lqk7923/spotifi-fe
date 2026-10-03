@@ -1,14 +1,8 @@
 import { AudioLines } from 'lucide-react'
-
-const palettes = [
-  ['#6b3bbd', '#b098e8'], ['#0b716a', '#88d7b2'], ['#a84832', '#edba86'],
-  ['#264b97', '#90b8db'], ['#982c65', '#e993b9'], ['#807227', '#d9d58c'],
-]
+import { artworkColors } from '../lib/artwork.js'
 
 export default function Artwork({ track, small = false }) {
-  const hash = [...(track?.trackId || 'music')]
-    .reduce((sum, letter) => sum + letter.charCodeAt(0), 0)
-  const colors = palettes[hash % palettes.length]
+  const colors = artworkColors(track)
 
   return (
     <div

@@ -5,10 +5,13 @@ import PlaybackQueue from './PlaybackQueue.jsx'
 import PlayerBar from './PlayerBar.jsx'
 import Sidebar from './Sidebar.jsx'
 import Topbar from './Topbar.jsx'
+import OverlayScrollbar from './OverlayScrollbar.jsx'
+import { artworkColors } from '../lib/artwork.js'
 
 export default function MusicLayout({ albumId, page: Page }) {
   const library = useMusicLibrary(albumId)
   const albumLoading = !!albumId && library.loading
+  const albumColors = albumId ? artworkColors(library.collectionTracks[0]) : null
   const audioRef = useRef(null)
   const player = useAudioPlayer(library.collectionTracks, audioRef)
   const [queueOpen, setQueueOpen] = useState(false)
@@ -34,11 +37,16 @@ export default function MusicLayout({ albumId, page: Page }) {
       <Topbar search={library.search} onSearchChange={library.setSearch} searchRef={searchRef} onHome={showHome} />
       <Sidebar library={library} onHome={showHome} onSearch={() => searchRef.current?.focus()} onLibrary={focusLibrary} />
       <main
-        ref={mainRef}
-        className={`main-content${albumLoading ? ' album-loading' : library.albumNotFound ? ' album-unavailable' : ''}`}
+        className={`main-content${albumLoading ? ' album-loading' : library.albumNotFound ? ' album-unavailable' : albumId ? ' album-page' : ''}`}
+        style={albumColors ? { '--album-color': albumColors[0] } : undefined}
         aria-busy={albumLoading}
       >
-        <Page library={library} player={player} libraryRef={libraryRef} onLibrary={focusLibrary} />
+        <div ref={mainRef} className="main-scroll" tabIndex={0} aria-label="Page content">
+          <div className="main-page">
+            <Page library={library} player={player} libraryRef={libraryRef} onLibrary={focusLibrary} />
+          </div>
+        </div>
+        <OverlayScrollbar scrollRef={mainRef} />
       </main>
       <PlaybackQueue tracks={library.collectionTracks} player={player} open={queueOpen} onClose={() => setQueueOpen(false)} />
       <PlayerBar

@@ -12,6 +12,7 @@ function TrackRow({ track, index, player, library }) {
   const liked = library.isLiked(track)
   const subtitle = trackAuthor(track)
   const duration = selected && player.duration > 0 ? player.duration : trackDurationSeconds(track)
+  const title = <span><strong>{trackLabel(track)}</strong><small title={subtitle}>{subtitle}</small></span>
 
   return (
     <tr className={selected ? 'current-row' : ''}>
@@ -24,14 +25,14 @@ function TrackRow({ track, index, player, library }) {
         </TrackPlayButton>
       </td>
       <td>
-        <TrackPlayButton track={track} player={player} className="track-title-cell">
-          {library.selectedAlbum ? (
-            <span className="track-play-mark" aria-hidden="true">
-              <TrackPlaybackIcon selected={selected} player={player} size={20} />
-            </span>
-          ) : <Artwork track={track} small />}
-          <span><strong>{trackLabel(track)}</strong><small title={subtitle}>{subtitle}</small></span>
-        </TrackPlayButton>
+        {library.selectedAlbum ? (
+          <div className="track-title-cell">{title}</div>
+        ) : (
+          <TrackPlayButton track={track} player={player} className="track-title-cell">
+            <Artwork track={track} small />
+            {title}
+          </TrackPlayButton>
+        )}
         {!library.selectedAlbum && (
           <AppLink className="album-link mobile-album-link" href={albumPath(track.albumId)}>
             {track.albumTitle || 'Untitled album'}

@@ -21,7 +21,7 @@
 }
 
 .sidebar, .main-content, .queue-panel {
-  border-radius: 10px;
+  border-radius: 10px 10px 0 0;
 }
 
 .topbar, .player-bar {
@@ -947,19 +947,6 @@ h2 {
   flex-direction: column;
   min-width: 0;
   gap: 5px;
-}
-
-.track-title-cell > .track-play-mark {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  color: #fff;
-}
-
-.current-row .track-play-mark {
-  color: var(--green);
 }
 
 .track-title-cell strong {

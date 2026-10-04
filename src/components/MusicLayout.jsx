@@ -14,6 +14,7 @@ export default function MusicLayout({ albumId, page: Page }) {
   const albumColors = albumId ? artworkColors(library.selectedAlbum) : null
   const audioRef = useRef(null)
   const player = useAudioPlayer(library.collectionTracks, audioRef)
+  const hasCurrentTrack = !!player.currentTrack
   const [queueOpen, setQueueOpen] = useState(false)
   const searchRef = useRef(null)
   const libraryRef = useRef(null)
@@ -32,10 +33,11 @@ export default function MusicLayout({ albumId, page: Page }) {
   }
 
   return (
-    <div className="music-app" data-theme="dark">
+    <div className={`music-app${hasCurrentTrack ? '' : ' playback-idle'}`} data-theme="dark">
+      <audio ref={audioRef} {...player.audioEvents} preload="metadata" hidden />
       <a className="skip-link" href="#all-tracks">Skip to tracks</a>
       <Topbar search={library.search} onSearchChange={library.setSearch} searchRef={searchRef} onHome={showHome} />
-      <Sidebar library={library} onHome={showHome} onSearch={() => searchRef.current?.focus()} onLibrary={focusLibrary} />
+      <Sidebar library={library} hasCurrentTrack={hasCurrentTrack} onHome={showHome} onSearch={() => searchRef.current?.focus()} onLibrary={focusLibrary} />
       <main
         className={`main-content${albumLoading ? ' album-loading' : library.albumNotFound ? ' album-unavailable' : albumId ? ' album-page' : ''}`}
         style={albumColors ? { '--album-color': albumColors[0] } : undefined}
@@ -49,10 +51,12 @@ export default function MusicLayout({ albumId, page: Page }) {
         <OverlayScrollbar scrollRef={mainRef} />
       </main>
       <PlaybackQueue tracks={library.collectionTracks} library={library} player={player} open={queueOpen} onClose={() => setQueueOpen(false)} />
-      <PlayerBar
-        audioRef={audioRef} player={player} library={library}
-        queueOpen={queueOpen} onToggleQueue={() => setQueueOpen((value) => !value)}
-      />
+      {hasCurrentTrack && (
+        <PlayerBar
+          player={player} library={library}
+          queueOpen={queueOpen} onToggleQueue={() => setQueueOpen((value) => !value)}
+        />
+      )}
     </div>
   )
 }

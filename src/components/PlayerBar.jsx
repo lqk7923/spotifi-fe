@@ -7,7 +7,7 @@ import { trackAuthor, trackLabel } from '../lib/tracks.js'
 import Artwork from './Artwork.jsx'
 import IconButton from './IconButton.jsx'
 
-export default function PlayerBar({ audioRef, player, library, queueOpen, onToggleQueue }) {
+export default function PlayerBar({ player, library, queueOpen, onToggleQueue }) {
   const { currentTrack, isLoading, isPlaying, duration, position, volume, isMuted } = player
   const hasTracks = library.collectionTracks.length > 0
   const liked = library.isLiked(currentTrack)
@@ -23,7 +23,6 @@ export default function PlayerBar({ audioRef, player, library, queueOpen, onTogg
 
   return (
     <footer className="player-bar" aria-label="Music player">
-      <audio ref={audioRef} {...player.audioEvents} preload="metadata" />
       <div className="player-track">
         <Artwork track={currentTrack} small />
         <div>

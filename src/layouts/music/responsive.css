@@ -1,0 +1,38 @@
+@media (max-width: 1000px) {
+  .topbar, .welcome-section {
+    padding-inline: 24px;
+  }
+  .quick-grid {
+    width: calc(100% - 42px);
+    margin-inline: 21px;
+  }
+  .content-sections {
+    padding-inline: 24px;
+  }
+  .player-bar {
+    gap: 14px;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 1.4fr) auto;
+  }
+  .player-extras input {
+    width: 58px;
+  }
+  .player-track {
+    gap: 9px;
+  }
+  .player-track > .icon-button {
+    display: none;
+  }
+  .music-badge.badge {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+  .spin, .spin-icon svg {
+    animation-duration: 2s;
+  }
+}

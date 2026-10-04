@@ -1,5 +1,5 @@
-import { AudioPreloader, PRELOAD_BYTES } from '../src/lib/audio-preload.js'
-import { getTracks } from '../src/lib/music-api.js'
+import { AudioPreloader, PRELOAD_BYTES } from '../src/features/player/lib/audio-preload.js'
+import { getTracks } from '../src/services/music-api.js'
 import { trackKey, trackLabel } from '../src/lib/tracks.js'
 import { summarize } from './statistics.js'
 

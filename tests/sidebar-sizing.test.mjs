@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { sidebarWidth, stepSidebarWidth } from '../src/lib/sidebarSizing.js'
+import { sidebarWidth, stepSidebarWidth } from '../src/layouts/music/sidebar/sidebarSizing.js'
 
 test('left sidebar snaps between icon mode and the expanded range without intermediate widths', () => {
   assert.equal(sidebarWidth(72, true), 72)

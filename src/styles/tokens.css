@@ -1,0 +1,16 @@
+.music-app {
+  --layout-min-width: 800px;
+  --layout-min-height: 600px;
+  --green: #1ed760;
+  --muted: #a7a7a7;
+  --header-height: 64px;
+  --player-height: 80px;
+  --player-gap: 8px;
+  --panel-gap: 8px;
+  --panel-background: #121212;
+  --home-banner-color: #32297b;
+  --sidebar-left-width: 280px;
+  --layout-left-width: var(--sidebar-left-width);
+  --sidebar-right-width: 280px;
+  --queue-width: var(--sidebar-right-width);
+}

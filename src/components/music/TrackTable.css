@@ -1,0 +1,158 @@
+.track-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.track-table.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.track-table thead {
+  color: #969696;
+  border-bottom: 1px solid #ffffff14;
+}
+
+.track-table th {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 12px 10px;
+  letter-spacing: .3px;
+}
+
+.track-table td {
+  border: 0;
+  padding: 8px 12px;
+  color: var(--muted);
+}
+
+.track-table tbody tr {
+  height: 63px;
+}
+
+.track-table tbody tr:hover, .track-table .current-row {
+  background: #ffffff09;
+}
+
+.number-column {
+  width: 35px;
+}
+
+.collection-column {
+  width: 24%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.like-column {
+  width: 46px;
+}
+
+.duration-column {
+  width: 53px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.duration-column svg {
+  margin-left: auto;
+}
+
+.row-play {
+  position: relative;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 24px;
+}
+
+.row-play-icon {
+  position: absolute;
+  display: none;
+  color: #fff;
+}
+
+.track-table tr:hover .row-number, .row-play:focus-visible .row-number {
+  visibility: hidden;
+}
+
+.track-table tr:hover .row-play-icon, .row-play:focus-visible .row-play-icon {
+  display: flex;
+}
+
+.current-row .row-number {
+  color: var(--green);
+}
+
+.track-title-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.track-title-cell > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 5px;
+}
+
+.track-title-cell strong {
+  color: #f4f4f4;
+  font-size: 16px;
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.current-row .track-title-cell strong {
+  color: var(--green);
+}
+
+.track-title-cell small {
+  font-size: 14px;
+  font-weight: 600;
+  color: #777;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.album-link {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.album-link:hover, .album-link:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.mobile-album-link {
+  display: none;
+}

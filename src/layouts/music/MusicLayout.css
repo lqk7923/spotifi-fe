@@ -1,0 +1,53 @@
+.music-app {
+  display: grid;
+  grid-template-columns: var(--layout-left-width) var(--panel-gap) minmax(0, 1fr) var(--panel-gap) var(--queue-width);
+  grid-template-rows: var(--header-height) minmax(0, 1fr) calc(var(--player-height) + var(--player-gap));
+  grid-template-areas:
+    'header header header header header'
+    'sidebar left-resizer main right-resizer queue'
+    'player player player player player';
+  width: max(var(--layout-min-width), 100%);
+  height: max(var(--layout-min-height), 100dvh);
+  column-gap: 0;
+  row-gap: 0;
+  padding-inline: var(--panel-gap);
+  overflow: hidden;
+  background: #000;
+  font-size: 14px;
+}
+
+.sidebar, .main-content, .queue-panel {
+  border-radius: 10px;
+}
+
+.music-app.playback-idle {
+  --player-height: 0px;
+  --player-gap: 0px;
+  padding-bottom: var(--panel-gap);
+}
+
+.music-app.queue-collapsed {
+  --queue-width: 40px;
+  grid-template-columns: var(--layout-left-width) var(--panel-gap) minmax(0, 1fr) var(--panel-gap) var(--queue-width);
+  grid-template-areas:
+    'header header header header header'
+    'sidebar left-resizer main right-resizer queue'
+    'player player player player player';
+  padding-right: 0;
+}
+
+.music-app.queue-collapsed:has(.queue-panel:hover), .music-app.queue-collapsed:has(.queue-panel:focus-within) {
+  --queue-width: 60px;
+}
+
+.queue-collapsed .topbar, .queue-collapsed .player-bar {
+  margin-right: 0;
+}
+
+.playback-idle .sidebar, .playback-idle .main-content, .playback-idle .queue-panel {
+  border-radius: 10px;
+}
+
+.topbar, .player-bar {
+  margin-inline: calc(-1 * var(--panel-gap));
+}

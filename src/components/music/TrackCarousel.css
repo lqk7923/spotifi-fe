@@ -1,0 +1,84 @@
+.track-carousel {
+  position: relative;
+}
+
+.track-scroll-edge {
+  position: absolute;
+  inset-block: 0;
+  width: 64px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.track-scroll-edge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #12121222;
+  backdrop-filter: blur(3px);
+  transition: opacity .2s;
+}
+
+.track-scroll-edge-left {
+  left: 0;
+}
+
+.track-scroll-edge-left::before {
+  mask-image: linear-gradient(to right, #000, transparent);
+}
+
+.track-scroll-edge-right {
+  right: 0;
+}
+
+.track-scroll-edge-right::before {
+  mask-image: linear-gradient(to left, #000, transparent);
+}
+
+.track-scroll-edge.is-at-edge::before {
+  opacity: 0;
+}
+
+.track-scroll-button {
+  position: absolute;
+  top: 77px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: #282828cc;
+  backdrop-filter: blur(3px);
+  pointer-events: auto;
+  box-shadow: 0 2px 8px #0006;
+  transition: background .15s, opacity .15s;
+}
+
+.track-scroll-button:hover:not(:disabled) {
+  background: #3e3e3e;
+}
+
+.track-scroll-previous {
+  left: 4px;
+}
+
+.track-scroll-next {
+  right: 4px;
+}
+
+.track-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 194px;
+  gap: 15px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.track-grid::-webkit-scrollbar {
+  display: none;
+}

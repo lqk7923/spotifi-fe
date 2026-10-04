@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { afterEach, mock, test } from 'node:test'
-import { AudioPreloader, fetchPrefix, PRELOAD_BYTES } from '../src/lib/audio-preload.js'
+import { AudioPreloader, fetchPrefix, PRELOAD_BYTES } from '../src/features/player/lib/audio-preload.js'
 import { createAudioResponse, parseRange } from '../public/audio-preload-worker.js'
 
 afterEach(() => mock.restoreAll())

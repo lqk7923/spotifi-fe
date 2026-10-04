@@ -2,9 +2,10 @@
 
 A React music home page at `/`, based on the supplied Figma home design.
 Built with Vite, Tailwind CSS, daisyUI, and Lucide React. No login is required.
-Albums have dedicated pages at `/album/{uuid}`. Click the Spotifi logo to return
+Albums have dedicated pages at `/album/{id}`. Click the Spotifi logo to return
 to Home; browser Back/Forward also works. The old `/home` URL redirects to `/`.
 The player remains mounted when navigating between Home and an album.
+Album IDs are URL-decoded without UUID validation or case conversion; the backend validates their format and existence.
 
 Backend repository: [Spotifi backend](https://github.com/lqk7923/Spotifi.git).
 
@@ -174,16 +175,17 @@ display the Album page; `/` should still display Home.
 
 ## Source structure
 
-- `src/App.jsx`: route entry and shared stylesheet.
-- `src/pages/HomePage.jsx`, `AlbumPage.jsx`: dedicated Home and album content.
-- `src/components/MusicLayout.jsx`: shared library/player hooks and persistent player layout.
-- `src/components/`: sidebar, highlights, track table, queue, player controls, and shared buttons/artwork.
-- `src/hooks/useMusicLibrary.js`: list loading, local search/filter state, and persisted likes.
-- `src/hooks/useAudioPlayer.js`: audio lifecycle, playback controls, and next-track selection.
-- `src/lib/music-api.js`: backend requests and response handling.
-- `src/lib/navigation.js`, `src/hooks/useRoute.js`: URL routing and browser history.
+- `src/app/App.jsx`: route entry; `MusicApp.jsx` connects data and actions to the persistent audio player and layout.
+- `src/app/routing/`: URL routing, browser history, and internal links.
+- `src/layouts/music/`: layout composition, TopBar, MainContent, shared SidebarPanel, and sidebar resizing.
+- `src/layouts/music/useMusicLayout.js`: sidebar widths and collapse state. The queue collapses on initial load below 1,000px and whenever the viewport crosses below that breakpoint. Users can reopen it manually; widening the viewport preserves their selection.
+- `src/pages/home/`, `src/pages/album/`: page content, headers, actions, and page-specific styles.
+- `src/features/library/`: library sidebar, track-list states, and separate hooks for tracks, albums, filters, and persisted likes.
+- `src/features/player/`: BottomBar, playback controls, queue sidebar, audio lifecycle, and preload support. Playback still uses the current page's collection.
+- `src/components/ui/`: shared buttons and scroll areas; `src/components/music/`: artwork, media items, track tables, and playback buttons.
+- `src/services/music-api.js`: backend requests and response handling.
 - `src/lib/tracks.js`, `format.js`: track identity, validation, filtering, and display formatting.
-- `src/lib/audio-preload.js`: optional next-track preload and communication with the Service Worker.
+- `src/styles/`: global styles, shared tokens, and the stylesheet entry. Component/page CSS lives beside its owner; responsive layout overrides load last.
 - `public/audio-preload-worker.js`: cached byte ranges and signed URL renewal; served directly at the app root.
 
 ## Validation

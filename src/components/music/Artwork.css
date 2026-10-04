@@ -1,0 +1,112 @@
+.artwork-button {
+  position: relative;
+  display: block;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 0;
+  border-radius: 3px;
+}
+
+.track-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 3px;
+  background: linear-gradient(140deg, var(--cover-start), var(--cover-end));
+  box-shadow: 0 6px 18px #0003;
+  isolation: isolate;
+}
+
+.track-art::before {
+  content: '';
+  position: absolute;
+  width: 140%;
+  height: 27%;
+  left: -20%;
+  top: 37%;
+  transform: rotate(-35deg);
+  background: #ffffff17;
+}
+
+.cover-label {
+  position: absolute;
+  left: 10%;
+  top: 10%;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 2px;
+  color: #ffffffde;
+  z-index: 2;
+  text-align: left;
+}
+
+.vinyl {
+  width: 76%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  position: absolute;
+  right: -22%;
+  top: 18%;
+  background: repeating-radial-gradient(circle, #15151c 0, #15151c 2px, #272730 3px, #15151c 4px);
+  box-shadow: -8px 5px 18px #0003;
+  display: grid;
+  place-items: center;
+  transform: rotate(-30deg);
+}
+
+.vinyl span {
+  width: 28%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--cover-end);
+  border: 3px solid #fff2;
+}
+
+.vinyl span::after {
+  content: '';
+  display: block;
+  width: 12%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #15151c;
+  margin: 44%;
+}
+
+.cover-wave {
+  position: absolute;
+  width: 27%;
+  height: 27%;
+  left: 10%;
+  bottom: 15%;
+  opacity: .6;
+  stroke-width: 1;
+}
+
+.cover-id {
+  position: absolute;
+  bottom: 7%;
+  right: 9%;
+  font-size: clamp(14px, 1.6vw, 24px);
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #ffffffbd;
+}
+
+.track-art-small {
+  width: 42px;
+  height: 42px;
+  aspect-ratio: 1;
+}
+
+.track-art-small .cover-label, .track-art-small .cover-id {
+  display: none;
+}
+
+.track-art-small .cover-wave {
+  width: 32%;
+  height: 32%;
+}

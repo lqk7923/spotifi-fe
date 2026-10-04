@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { afterEach, test, mock } from 'node:test'
-import { getAlbumTracks, getPlaybackUrl, getSigningEndpoint, getTracks } from '../src/lib/music-api.js'
+import { getAlbumTracks, getPlaybackUrl, getSigningEndpoint, getTracks } from '../src/services/music-api.js'
 import { getAlbumQueue, trackAuthor, trackDurationSeconds, trackLabel } from '../src/lib/tracks.js'
+import { albumPath, resolveRoute } from '../src/app/routing/navigation.js'
 
 afterEach(() => mock.restoreAll())
 const track = {
@@ -82,6 +83,21 @@ test('preserves HTTP status so missing albums are distinct from server failures'
   for (const status of [404, 500]) {
     mock.method(globalThis, 'fetch', async () => new Response('Not found or unavailable', { status }))
     await assert.rejects(getAlbumTracks(track.albumId), (error) => error.status === status)
+    mock.restoreAll()
+  }
+})
+
+test('arbitrary route IDs reach the backend unchanged and preserve validation errors', async () => {
+  for (const id of ['not-a-uuid', 'Album_ABC', 'album/id?#', '%2F']) {
+    let requested = false
+    mock.method(globalThis, 'fetch', async (url) => {
+      requested = true
+      assert.equal(url, `/album/${encodeURIComponent(id)}/tracks`)
+      return Response.json({ message: 'Invalid album ID' }, { status: 400 })
+    })
+    const route = resolveRoute(albumPath(id))
+    await assert.rejects(getAlbumTracks(route.albumId), error => error.status === 400)
+    assert.equal(requested, true)
     mock.restoreAll()
   }
 })

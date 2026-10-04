@@ -37,7 +37,7 @@ export default function MusicLayout({ albumId, page: Page }) {
       <audio ref={audioRef} {...player.audioEvents} preload="metadata" hidden />
       <a className="skip-link" href="#all-tracks">Skip to tracks</a>
       <Topbar search={library.search} onSearchChange={library.setSearch} searchRef={searchRef} onHome={showHome} />
-      <Sidebar library={library} hasCurrentTrack={hasCurrentTrack} onHome={showHome} onSearch={() => searchRef.current?.focus()} onLibrary={focusLibrary} />
+      <Sidebar library={library} onHome={showHome} onSearch={() => searchRef.current?.focus()} onLibrary={focusLibrary} />
       <main
         className={`main-content${albumLoading ? ' album-loading' : library.albumNotFound ? ' album-unavailable' : albumId ? ' album-page' : ''}`}
         style={albumColors ? { '--album-color': albumColors[0] } : undefined}
@@ -50,7 +50,7 @@ export default function MusicLayout({ albumId, page: Page }) {
         </div>
         <OverlayScrollbar scrollRef={mainRef} />
       </main>
-      <PlaybackQueue tracks={library.collectionTracks} library={library} player={player} open={queueOpen} onClose={() => setQueueOpen(false)} />
+      <PlaybackQueue tracks={library.collectionTracks} player={player} open={queueOpen} onClose={() => setQueueOpen(false)} onSearch={() => searchRef.current?.focus()} />
       {hasCurrentTrack && (
         <PlayerBar
           player={player} library={library}

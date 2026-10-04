@@ -1,10 +1,10 @@
 import { useRef } from 'react'
-import { Headphones, Heart, Home, Library, ListMusic, PanelLeft, Search } from 'lucide-react'
+import { Headphones, Heart, Home, Library, ListMusic, Search } from 'lucide-react'
 import { albumPath } from '../lib/navigation.js'
 import SidebarMediaItem from './SidebarMediaItem.jsx'
 import OverlayScrollbar from './OverlayScrollbar.jsx'
 
-export default function Sidebar({ library, hasCurrentTrack, onHome, onSearch, onLibrary }) {
+export default function Sidebar({ library, onHome, onSearch, onLibrary }) {
   const scrollRef = useRef(null)
   const { selectedAlbum, albums, likedOnly, likedCount, resetFilters } = library
 
@@ -15,21 +15,6 @@ export default function Sidebar({ library, hasCurrentTrack, onHome, onSearch, on
   const showLiked = () => {
     library.showLiked()
     onLibrary()
-  }
-
-  if (!hasCurrentTrack) {
-    return (
-      <aside className="sidebar sidebar-idle" aria-label="Find music to play">
-        <PanelLeft className="sidebar-idle-icon" size={22} aria-hidden="true" />
-        <div className="sidebar-empty">
-          <h2>Find something to play</h2>
-          <button className="sidebar-search" onClick={onSearch} aria-label="Search for music">
-            <Search size={22} aria-hidden="true" />
-            <span>Search</span>
-          </button>
-        </div>
-      </aside>
-    )
   }
 
   return (

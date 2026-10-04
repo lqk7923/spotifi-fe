@@ -21,19 +21,30 @@ export default function AlbumPage({ library, player, libraryRef }) {
     )
   }
 
+  if (error) {
+    return (
+      <div className="content-sections album-content">
+        <TrackLibrary library={library} player={player} libraryRef={libraryRef} />
+      </div>
+    )
+  }
+
   const duration = collectionTracks.reduce((total, track) => total + (trackDurationSeconds(track) || 0), 0)
 
   return (
     <>
       <section className="album-hero" aria-labelledby="album-title">
-        <Artwork track={collectionTracks[0] || selectedAlbum} />
-        <div className="album-details">
-          <p className="eyebrow">ALBUM</p>
-          <h1 id="album-title">{selectedAlbum.albumTitle || 'Album'}</h1>
-          {selectedAlbum.author && <p className="album-author">{selectedAlbum.author}</p>}
-          {!loading && !error && (
-            <p className="album-meta">{collectionTracks.length} {collectionTracks.length === 1 ? 'track' : 'tracks'}{duration > 0 && ` · ${timeLabel(duration)}`}</p>
-          )}
+        <div className="album-identity">
+          <Artwork track={collectionTracks[0] || selectedAlbum} />
+          <div className="album-details">
+            <p className="album-type">Album</p>
+            <h1 id="album-title">{selectedAlbum.albumTitle || 'Album'}</h1>
+            <p className="album-meta">
+              {selectedAlbum.author && <><span className="album-author">{selectedAlbum.author}</span><span aria-hidden="true"> · </span></>}
+              <span>{collectionTracks.length} {collectionTracks.length === 1 ? 'song' : 'songs'}</span>
+              {duration > 0 && <><span aria-hidden="true">, </span><span className="album-total-duration">{timeLabel(duration)}</span></>}
+            </p>
+          </div>
         </div>
       </section>
       <div className="content-sections album-content">

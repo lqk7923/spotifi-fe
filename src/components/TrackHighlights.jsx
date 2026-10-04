@@ -1,36 +1,33 @@
 import { AudioLines } from 'lucide-react'
 import { greetingLabel } from '../lib/format.js'
-import { trackAuthor, trackKey, trackLabel } from '../lib/tracks.js'
+import { albumPath } from '../lib/navigation.js'
+import { getAlbums, trackAuthor, trackKey, trackLabel } from '../lib/tracks.js'
+import AppLink from './AppLink.jsx'
 import Artwork from './Artwork.jsx'
 import TrackPlayButton, { TrackPlaybackIcon } from './TrackPlayButton.jsx'
 
-export function WelcomeSection({ library, player }) {
+export function WelcomeSection({ library, onAlbumHover }) {
   const { loading, error, visibleTracks } = library
-  const currentKey = player.currentTrack && trackKey(player.currentTrack)
+  const albums = getAlbums(visibleTracks).slice(0, 8)
   let content = <p className="welcome-copy">A little music. A better day. Find your next track below.</p>
 
   if (loading) {
     content = (
-      <div className="quick-grid" aria-label="Loading tracks">
-        {Array.from({ length: 6 }, (_, index) => <div key={index} className="skeleton quick-skeleton" />)}
+      <div className="quick-grid" aria-label="Loading albums">
+        {Array.from({ length: 8 }, (_, index) => <div key={index} className="skeleton quick-skeleton" />)}
       </div>
     )
-  } else if (!error && visibleTracks.length) {
+  } else if (!error && albums.length) {
     content = (
       <div className="quick-grid">
-        {visibleTracks.slice(0, 6).map((track) => {
-          const selected = trackKey(track) === currentKey
-          return (
-            <TrackPlayButton
-              key={trackKey(track)} track={track} player={player}
-              className={`quick-track ${selected ? 'selected' : ''}`}
-            >
-              <Artwork track={track} small />
-              <span>{trackLabel(track)}</span>
-              <span className="quick-play"><TrackPlaybackIcon selected={selected} player={player} /></span>
-            </TrackPlayButton>
-          )
-        })}
+        {albums.map((album) => (
+          <AppLink key={album.albumId} href={albumPath(album.albumId)} className="quick-track"
+            onPointerEnter={() => onAlbumHover?.(album)} onFocus={() => onAlbumHover?.(album)}
+            aria-label={`Open album ${album.albumTitle}`} title={album.albumTitle}>
+            <Artwork track={album} small />
+            <span>{album.albumTitle}</span>
+          </AppLink>
+        ))}
       </div>
     )
   }

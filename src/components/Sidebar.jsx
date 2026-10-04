@@ -1,10 +1,10 @@
 import { useRef } from 'react'
-import { Headphones, Heart, Home, Library, ListMusic, Search } from 'lucide-react'
+import { Headphones, Heart, Library, ListMusic, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react'
 import { albumPath } from '../lib/navigation.js'
 import SidebarMediaItem from './SidebarMediaItem.jsx'
 import OverlayScrollbar from './OverlayScrollbar.jsx'
 
-export default function Sidebar({ library, onHome, onSearch, onLibrary }) {
+export default function Sidebar({ library, onSearch, onLibrary, collapsed, onToggleCollapse }) {
   const scrollRef = useRef(null)
   const { selectedAlbum, albums, likedOnly, likedCount, resetFilters } = library
 
@@ -18,21 +18,33 @@ export default function Sidebar({ library, onHome, onSearch, onLibrary }) {
   }
 
   return (
-    <aside className="sidebar" aria-label="Main navigation">
+    <aside id="library-sidebar" className="sidebar" aria-label="Main navigation">
       <div className="sidebar-scroll" ref={scrollRef} tabIndex={0} aria-label="Library navigation">
         <div className="sidebar-body">
-          <nav className="nav-links">
-            <button className={`nav-item ${!likedOnly && !selectedAlbum ? 'nav-active' : ''}`} onClick={onHome}>
-              <Home size={23} />Home
+          <div className="sidebar-header">
+            <h2 className="sidebar-heading">Your Library</h2>
+            <button
+              type="button" className="icon-button sidebar-toggle"
+              aria-label={collapsed ? 'Expand library' : 'Collapse library'}
+              title={collapsed ? 'Expand library' : 'Collapse library'}
+              aria-expanded={!collapsed} onClick={onToggleCollapse}
+            >
+              {collapsed ? (
+                <>
+                  <Library className="sidebar-library-icon" size={24} aria-hidden="true" />
+                  <PanelLeftOpen className="sidebar-expand-icon" size={24} aria-hidden="true" />
+                </>
+              ) : <PanelLeftClose size={24} aria-hidden="true" />}
             </button>
-            <button className="nav-item" onClick={onSearch}><Search size={23} />Search</button>
-            <button className="nav-item" onClick={onLibrary}><Library size={23} />Your Library</button>
+          </div>
+          <nav className="nav-links">
+            <button className="nav-item" onClick={onSearch} aria-label="Search" title="Search"><Search size={23} />Search</button>
           </nav>
           <div className="nav-collection">
-            <button className="nav-item" onClick={showAll}>
+            <button className="nav-item" onClick={showAll} aria-label="All tracks" title="All tracks">
               <span className="square-icon"><ListMusic size={19} /></span>All tracks
             </button>
-            <button className={`nav-item ${likedOnly ? 'nav-active' : ''}`} onClick={showLiked}>
+            <button className={`nav-item ${likedOnly ? 'nav-active' : ''}`} onClick={showLiked} aria-label={`Liked Songs, ${likedCount} tracks`} title="Liked Songs">
               <span className="square-icon liked-square"><Heart size={16} fill="currentColor" /></span>
               Liked Songs<span className="nav-count">{likedCount}</span>
             </button>
@@ -47,6 +59,7 @@ export default function Sidebar({ library, onHome, onSearch, onLibrary }) {
                 current={selectedAlbum?.albumId === album.albumId}
                 title={album.albumTitle || 'Untitled album'}
                 subtitle={`Album${album.author?.trim() ? ` • ${album.author.trim()}` : ''}`}
+                label={`${album.albumTitle || 'Untitled album'}${album.author ? ` by ${album.author}` : ''}`}
                 href={albumPath(album.albumId)}
               />
             ))}

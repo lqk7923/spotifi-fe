@@ -1,4 +1,4 @@
-import { Search, UserRound, X } from 'lucide-react'
+import { Home, Search, UserRound, X } from 'lucide-react'
 import AppLink from './AppLink.jsx'
 
 export default function Topbar({ search, onSearchChange, searchRef, onHome }) {
@@ -14,21 +14,26 @@ export default function Topbar({ search, onSearchChange, searchRef, onHome }) {
         </svg>
         <span>Spotifi</span>
       </AppLink>
-      <label className="search-field input">
-        <Search size={19} aria-hidden="true" />
-        <span className="sr-only">Search tracks</span>
-        <input
-          ref={searchRef}
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search your music"
-        />
-        {search && (
-          <button type="button" aria-label="Clear search" onClick={() => onSearchChange('')}>
-            <X size={16} />
-          </button>
-        )}
-      </label>
+      <div className="topbar-search">
+        <AppLink className="icon-button topbar-home" href="/" aria-label="Home" title="Home" onClick={onHome}>
+          <Home size={24} aria-hidden="true" />
+        </AppLink>
+        <label className="search-field input">
+          <Search size={24} aria-hidden="true" />
+          <span className="sr-only">Search tracks</span>
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="What do you want to play?"
+          />
+          {search && (
+            <button type="button" aria-label="Clear search" onClick={() => onSearchChange('')}>
+              <X size={16} />
+            </button>
+          )}
+        </label>
+      </div>
       <div className="guest-profile">
         <span><UserRound size={17} /></span><span>Music lover</span>
       </div>

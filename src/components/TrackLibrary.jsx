@@ -1,4 +1,4 @@
-import { AudioLines, CircleAlert, Clock3, Heart, LoaderCircle, Music2, Play, RefreshCw } from 'lucide-react'
+import { AudioLines, CircleAlert, Clock3, Heart, LoaderCircle, Music2, Play, RefreshCw, Shuffle } from 'lucide-react'
 import { timeLabel } from '../lib/format.js'
 import { trackAuthor, trackDurationSeconds, trackKey, trackLabel } from '../lib/tracks.js'
 import { albumPath } from '../lib/navigation.js'
@@ -25,14 +25,10 @@ function TrackRow({ track, index, player, library }) {
         </TrackPlayButton>
       </td>
       <td>
-        {library.selectedAlbum ? (
-          <div className="track-title-cell">{title}</div>
-        ) : (
-          <TrackPlayButton track={track} player={player} className="track-title-cell">
-            <Artwork track={track} small />
-            {title}
-          </TrackPlayButton>
-        )}
+        <TrackPlayButton track={track} player={player} className="track-title-cell">
+          <Artwork track={track} small />
+          {title}
+        </TrackPlayButton>
         {!library.selectedAlbum && (
           <AppLink className="album-link mobile-album-link" href={albumPath(track.albumId)}>
             {track.albumTitle || 'Untitled album'}
@@ -128,10 +124,34 @@ export default function TrackLibrary({ library, player, libraryRef }) {
   const { loading, error, visibleTracks, likedOnly, selectedAlbum, refresh } = library
   const title = selectedAlbum ? 'Tracks' : likedOnly ? 'Liked Songs' : 'All tracks'
   const countLabel = `${visibleTracks.length} ${visibleTracks.length === 1 ? 'track' : 'tracks'} in your collection`
+  const albumTrackSelected = selectedAlbum && player.currentTrack && library.collectionTracks.some(
+    (track) => trackKey(track) === trackKey(player.currentTrack),
+  )
+  const albumPlaying = albumTrackSelected && player.isPlaying
 
   return (
     <section id="all-tracks" ref={libraryRef} aria-labelledby="library-title" className="library-section">
-      <div className="section-heading library-heading">
+      {selectedAlbum ? (
+        <div className="album-actions">
+          <h2 id="library-title" className="sr-only">{title}</h2>
+          <button
+            type="button" className="album-play"
+            aria-label={`${albumPlaying ? 'Pause' : 'Play'} album ${selectedAlbum.albumTitle || 'Album'}`}
+            disabled={loading || !!error || !visibleTracks.length}
+            onClick={() => {
+              void (albumTrackSelected ? player.togglePlayback() : player.startTrack(visibleTracks[0]))
+            }}
+          >
+            <TrackPlaybackIcon selected={albumTrackSelected} player={player} size={28} />
+          </button>
+          <IconButton
+            icon={Shuffle} label="Shuffle album" active={player.shuffle} aria-pressed={player.shuffle}
+            disabled={loading || !!error || !visibleTracks.length}
+            onClick={() => player.setShuffle((value) => !value)}
+          />
+          <IconButton icon={RefreshCw} label="Refresh tracks" disabled={loading} onClick={refresh} />
+        </div>
+      ) : <div className="section-heading library-heading">
         <div>
           <h2 id="library-title">{title}</h2>
           <p>{loading ? 'Finding your music…' : countLabel}</p>
@@ -145,7 +165,7 @@ export default function TrackLibrary({ library, player, libraryRef }) {
           </button>
           <IconButton icon={RefreshCw} label="Refresh tracks" disabled={loading} onClick={refresh} />
         </div>
-      </div>
+      </div>}
       {player.error && (
         <div className="playback-error alert" role="alert">
           <CircleAlert size={19} /><span>{player.error}</span>

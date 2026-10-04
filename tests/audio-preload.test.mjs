@@ -169,6 +169,43 @@ test('changing the predicted track cancels the old preload', () => {
   assert.equal(preloader.next, null)
 })
 
+test('disabled preload does no background fetch and selected tracks still play directly', async () => {
+  const track = { bucketName: 'bucket', trackId: 'track' }
+  const controller = new AbortController()
+  const calls = []
+  const preloader = new AudioPreloader({
+    enabled: false,
+    requestPlaybackUrl: async (selectedTrack, signal) => {
+      calls.push({ track: selectedTrack, signal })
+      return 'https://r2.example/direct'
+    },
+  })
+  mock.method(globalThis, 'fetch', () => assert.fail('Disabled preload must not download a prefix'))
+  preloader.preload(track)
+  assert.equal(preloader.next, null)
+  assert.deepEqual(calls, [])
+
+  const result = await preloader.source(track, controller.signal)
+  assert.deepEqual(calls, [{ track, signal: controller.signal }])
+  assert.equal(result.url, 'https://r2.example/direct')
+  assert.equal(result.cached, false)
+  assert.ok(Date.now() - result.signedAt < 1000)
+  preloader.preload({ ...track, trackId: 'next' })
+  assert.equal(preloader.next, null)
+  assert.equal(calls.length, 1)
+  preloader.dispose()
+})
+
+test('disabled preload respects canceled playback before requesting a signed URL', async () => {
+  const preloader = new AudioPreloader({
+    enabled: false,
+    requestPlaybackUrl: () => assert.fail('Canceled selection must not request a signed URL'),
+  })
+  const controller = new AbortController()
+  controller.abort()
+  await assert.rejects(preloader.source({ bucketName: 'bucket', trackId: 'track' }, controller.signal), { name: 'AbortError' })
+})
+
 test('failed preload falls back to an already acquired, valid signed URL', async () => {
   const preloader = new AudioPreloader()
   preloader.next = {

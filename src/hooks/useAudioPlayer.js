@@ -3,6 +3,8 @@ import { errorMessage } from '../lib/music-api.js'
 import { trackDurationSeconds, trackKey } from '../lib/tracks.js'
 import { AudioPreloader, SIGNED_URL_MAX_AGE } from '../lib/audio-preload.js'
 
+const preloadEnabled = import.meta.env?.VITE_AUDIO_PRELOAD_ENABLED?.trim().toLowerCase() !== 'false'
+
 function playbackErrorMessage(cause, audio) {
   if (cause.name === 'NotAllowedError') {
     return 'Your browser paused playback. Press play to listen.'
@@ -42,7 +44,7 @@ export default function useAudioPlayer(tracks, audioRef) {
   }, [tracks, currentTrack, shuffle, shuffleSeed])
 
   useEffect(() => {
-    preloadRef.current = new AudioPreloader()
+    preloadRef.current = new AudioPreloader({ enabled: preloadEnabled })
     return () => {
       sequenceRef.current += 1
       requestRef.current?.abort()

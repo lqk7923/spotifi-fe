@@ -48,6 +48,15 @@ the end of the collection unless shuffle or repeat is enabled.
 
 ## Next-track preload
 
+Preload is enabled by default. To disable it in the app for testing, set
+`VITE_AUDIO_PRELOAD_ENABLED=false` in `.env.local` (or `.env`). Set it to `true`
+or remove the variable to enable it again. Restart the Vite dev server after
+changing the value; production builds must be rebuilt with the new value.
+When disabled, the player requests a signed URL only when a track is selected
+and plays it directly, without fetching upcoming prefixes or registering the
+preload Service Worker. The standalone benchmark still controls its own
+native/preload scenarios independently of this app setting.
+
 After playback starts, the player signs the predicted next track and fetches only
 `Range: bytes=0-2499999` (2.5 decimal MB). The first track is also preloaded once
 the library arrives. Only one upcoming prefix is kept in memory. Shuffle reserves

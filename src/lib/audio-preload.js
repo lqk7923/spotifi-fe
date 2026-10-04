@@ -122,7 +122,8 @@ async function storePrefix(entry, track, signal, signingEndpointFor) {
 
 // One upcoming track in memory; one playing track in the worker's bounded cache.
 export class AudioPreloader {
-  constructor({ requestPlaybackUrl = getPlaybackUrl, signingEndpointFor = getSigningEndpoint } = {}) {
+  constructor({ enabled = true, requestPlaybackUrl = getPlaybackUrl, signingEndpointFor = getSigningEndpoint } = {}) {
+    this.enabled = enabled
     this.next = null
     this.active = null
     this.requestPlaybackUrl = requestPlaybackUrl
@@ -133,7 +134,7 @@ export class AudioPreloader {
     if (track && this.next?.key === trackKey(track)) return
     this.next?.controller.abort()
     this.next = null
-    if (!track) return
+    if (!track || !this.enabled) return
     const entry = { key: trackKey(track), controller: new AbortController() }
     this.next = entry
     entry.ready = (async () => {
@@ -147,7 +148,7 @@ export class AudioPreloader {
 
   async source(track, signal, bypass = false) {
     signal.throwIfAborted()
-    const entry = !bypass && this.next?.key === trackKey(track) ? this.next : null
+    const entry = this.enabled && !bypass && this.next?.key === trackKey(track) ? this.next : null
     if (entry) {
       this.next = null
       // Briefly join an almost-ready preload, otherwise use native playback.

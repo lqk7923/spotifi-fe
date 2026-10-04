@@ -4,6 +4,7 @@ import { albumPath } from '../lib/navigation.js'
 import { getAlbums, trackAuthor, trackKey, trackLabel } from '../lib/tracks.js'
 import AppLink from './AppLink.jsx'
 import Artwork from './Artwork.jsx'
+import TrackCarousel from './TrackCarousel.jsx'
 import TrackPlayButton, { TrackPlaybackIcon } from './TrackPlayButton.jsx'
 
 export function WelcomeSection({ library, onAlbumHover }) {
@@ -51,10 +52,10 @@ export function DiscoverSection({ library, player, onLibrary }) {
   return (
     <section aria-labelledby="discover-title">
       <div className="section-heading">
-        <div><h2 id="discover-title">Your music, on repeat</h2><p>Pick a track and make it your moment.</p></div>
+        <div><h2 id="discover-title">Your music, on repeat</h2></div>
         <button className="text-button" onClick={onLibrary}>SEE ALL</button>
       </div>
-      <div className="track-grid">
+      <TrackCarousel>
         {visibleTracks.slice(0, 5).map((track) => {
           const selected = trackKey(track) === currentKey
           return (
@@ -69,7 +70,7 @@ export function DiscoverSection({ library, player, onLibrary }) {
             </article>
           )
         })}
-      </div>
+      </TrackCarousel>
     </section>
   )
 }

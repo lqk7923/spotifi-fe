@@ -1,6 +1,19 @@
+@property --album-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #32297b;
+}
+
 .main-content.album-page {
   container: album-view / inline-size;
   background: var(--panel-background) linear-gradient(180deg, var(--album-color), color-mix(in srgb, var(--album-color) 35%, #121212) 320px, #121212 650px);
+  transition: --album-color .35s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-content.album-page {
+    transition: none;
+  }
 }
 
 .album-hero {

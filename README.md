@@ -34,6 +34,11 @@ Cover image bytes are cached in browser Cache Storage (up to 100 images), with a
 AWS signing parameters are excluded from cache keys, so cached covers survive signed URL expiration and page reloads.
 Uncached covers rejected with 401/403 request a fresh URL and retry once. R2 must allow cross-origin GETs from the frontend for image caching.
 Use a new object path or version query when replacing a cover so browsers can distinguish it from an existing cached image.
+Album banners and Home album hover colors are extracted from a 32×32 sample of the cached cover's centered square crop.
+Dominant colored regions take priority over white/black borders; monochrome covers retain a neutral tint.
+The color is gently darkened to preserve cover brightness and readable white headings, then fades into the existing dark page background.
+Extracted colors are cached by the unsigned cover URL in localStorage (up to 100 entries), so reloads do not require decoding them again.
+Missing or unreadable covers retain the generated album palette. Banner transitions respect reduced-motion preferences.
 Saved likes using the old bucket/track identity migrate to track IDs.
 Missing titles/authors fall back to track IDs/Unknown artist. API durations are converted from
 milliseconds to seconds for display and player controls; loaded audio metadata takes

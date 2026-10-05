@@ -3,7 +3,7 @@ import TrackLibrary from '../../features/library/components/TrackLibrary.jsx'
 import AlbumHeader from './components/AlbumHeader.jsx'
 import AlbumActions from './components/AlbumActions.jsx'
 import MainContent from '../../layouts/music/main-content/MainContent.jsx'
-import { artworkColors } from '../../lib/artwork.js'
+import useBannerColor from '../../components/music/useBannerColor.js'
 
 function AlbumContent({ library, player, libraryRef }) {
   const { selectedAlbum, collectionTracks, loading, error, albumNotFound } = library
@@ -42,10 +42,11 @@ function AlbumContent({ library, player, libraryRef }) {
 
 export default function AlbumPage({ albumId, library, player, libraryRef, mainRef }) {
   const { loading, error, albumNotFound, selectedAlbum } = library
+  const bannerColor = useBannerColor(selectedAlbum)
   const className = loading ? 'album-loading' : albumNotFound || error ? 'album-unavailable' : 'album-page'
   return (
     <MainContent scrollRef={mainRef} resetKey={albumId} className={className}
-      style={{ '--album-color': artworkColors(selectedAlbum)[0] }} busy={loading}>
+      style={{ '--album-color': bannerColor }} busy={loading}>
       <AlbumContent library={library} player={player} libraryRef={libraryRef} />
     </MainContent>
   )

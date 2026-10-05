@@ -1,4 +1,7 @@
 @media (max-width: 1000px) {
+  .music-app {
+    --layout-min-width: 0px;
+  }
   .topbar, .welcome-section {
     padding-inline: 24px;
   }
@@ -24,6 +27,527 @@
   }
   .music-badge.badge {
     display: none;
+  }
+}
+
+@media (max-width: 767px), (max-width: 1000px) and (max-height: 500px) and (orientation: landscape) {
+  .music-app, .music-app.queue-collapsed {
+    --layout-min-height: 0px;
+    --layout-left-width: 64px;
+    --queue-width: 0px;
+    --header-height: calc(56px + env(safe-area-inset-top, 0px));
+    --panel-gap: 4px;
+    grid-template-columns: var(--layout-left-width) minmax(0, 1fr);
+    grid-template-areas: 'header header' 'sidebar main' 'player player';
+    column-gap: var(--panel-gap);
+    padding-inline: max(4px, env(safe-area-inset-left, 0px)) max(4px, env(safe-area-inset-right, 0px));
+    font-size: 12px;
+  }
+
+  .music-app:not(.playback-idle) {
+    --player-height: calc(124px + env(safe-area-inset-bottom, 0px));
+    --player-gap: 4px;
+  }
+
+  .music-app.playback-idle {
+    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .queue-panel, .sidebar-resizer, .player-queue-toggle {
+    display: none;
+  }
+
+  .topbar {
+    gap: 8px;
+    padding: env(safe-area-inset-top, 0px) 8px 0;
+    margin-inline: 0;
+  }
+
+  .brand {
+    padding: 0;
+  }
+
+  .brand svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .brand > span, .guest-profile > span:last-child {
+    display: none;
+  }
+
+  .topbar-search {
+    flex: 1;
+    gap: 6px;
+  }
+
+  .topbar-home.icon-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .topbar-home svg, .search-field > svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .search-field.input {
+    height: 40px;
+    gap: 6px;
+    padding-inline: 10px;
+  }
+
+  .search-field input {
+    /* Keep 16px so focusing search does not zoom the page on iOS. */
+    font-size: 16px;
+    transform: none;
+  }
+
+  .guest-profile {
+    padding: 0;
+  }
+
+  .sidebar-body {
+    padding: 12px 10px;
+  }
+
+  .sidebar-header {
+    min-height: 32px;
+    margin-inline: -10px;
+    margin-bottom: 6px;
+  }
+
+  .sidebar-mobile-icon {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    color: #fff;
+  }
+
+  .nav-collection {
+    margin-top: 12px;
+  }
+
+  .square-icon, .sidebar-media-item .track-art-small {
+    width: 40px;
+    height: 40px;
+  }
+
+  .square-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .sidebar-media-item {
+    min-height: 44px;
+    margin-bottom: 4px;
+  }
+
+  .sidebar-divider {
+    margin-block: 12px;
+  }
+
+  .main-content.home-page {
+    --main-categories-height: 50px;
+  }
+
+  .main-categories {
+    height: 50px;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  .category-button {
+    height: 34px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  .welcome-section {
+    padding: 10px 12px 20px;
+  }
+
+  .welcome-heading {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .welcome-heading .eyebrow {
+    font-size: 9px;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .welcome-heading h1 {
+    font-size: clamp(20px, 5vw, 28px);
+    letter-spacing: -.6px;
+  }
+
+  .quick-grid {
+    --quick-album-height: 44px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-inline: 0;
+    gap: 6px;
+  }
+
+  .quick-track {
+    max-width: none;
+    gap: 6px;
+    padding-right: 6px;
+  }
+
+  .quick-track > span {
+    font-size: 11px;
+    line-height: 14px;
+  }
+
+  .content-sections, .content-sections.album-content {
+    padding: 0 12px 20px;
+  }
+
+  .section-heading {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .section-heading h2 {
+    font-size: 16px;
+    letter-spacing: -.3px;
+  }
+
+  .section-heading p {
+    font-size: 11px;
+  }
+
+  .text-button {
+    font-size: 10px;
+    letter-spacing: .5px;
+  }
+
+  .track-grid {
+    grid-auto-columns: 124px;
+    gap: 8px;
+  }
+
+  .music-card.card {
+    width: 124px;
+    max-height: none;
+    padding: 8px;
+  }
+
+  .music-card .artwork-button, .music-card .track-art {
+    width: 108px;
+    height: 108px;
+  }
+
+  .music-card h3 {
+    font-size: 13px;
+    line-height: 17px;
+  }
+
+  .music-card p {
+    font-size: 11px;
+    line-height: 15px;
+  }
+
+  .card-play {
+    width: 32px;
+    height: 32px;
+    opacity: 1;
+    transform: none;
+  }
+
+  .card-play svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .track-scroll-button {
+    width: 32px;
+    height: 32px;
+    top: 46px;
+  }
+
+  .track-scroll-edge {
+    width: 36px;
+  }
+
+  .library-section {
+    margin-top: 24px;
+  }
+
+  .library-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .library-actions {
+    gap: 8px;
+  }
+
+  .play-all.btn {
+    height: 32px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  .track-table th, .track-table td, .album-content .track-table td {
+    padding-inline: 3px;
+    font-size: 11px;
+  }
+
+  .track-table .collection-column {
+    display: none;
+  }
+
+  .track-table .number-column {
+    width: 22px;
+  }
+
+  .track-table .like-column {
+    width: 32px;
+  }
+
+  .track-table .duration-column {
+    width: 38px;
+  }
+
+  .track-table tbody tr {
+    height: 60px;
+  }
+
+  .track-title-cell {
+    gap: 6px;
+  }
+
+  .track-title-cell .track-art-small, .album-content .track-title-cell .track-art-small {
+    width: 28px;
+    height: 28px;
+  }
+
+  .track-title-cell > span {
+    gap: 2px;
+  }
+
+  .track-title-cell strong {
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .track-title-cell small, .album-content .track-title-cell small {
+    font-size: 10px;
+    line-height: 14px;
+  }
+
+  .mobile-album-link {
+    display: block;
+    margin-top: 2px;
+    margin-left: 34px;
+    font-size: 10px;
+    line-height: 14px;
+  }
+
+  .album-hero {
+    height: auto;
+    padding: 16px 12px;
+  }
+
+  .album-identity {
+    align-items: center;
+    gap: 12px;
+  }
+
+  .album-identity > .track-art {
+    width: clamp(64px, 22cqi, 120px);
+  }
+
+  .album-details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .album-type {
+    font-size: 11px;
+  }
+
+  .album-details h1 {
+    font-size: clamp(18px, 5cqi, 32px);
+    margin: 6px 0 10px;
+    letter-spacing: -.6px;
+  }
+
+  .album-meta {
+    font-size: 10px;
+    line-height: 1.7;
+  }
+
+  .album-actions {
+    gap: 16px;
+    padding-block: 16px;
+  }
+
+  .album-play {
+    width: 44px;
+    height: 44px;
+  }
+
+  .album-play svg, .album-actions .icon-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .album-not-found {
+    min-height: 220px;
+    padding: 24px 12px;
+    gap: 16px;
+  }
+
+  .album-not-found h1, .state-panel h3 {
+    font-size: 20px;
+  }
+
+  .album-not-found p {
+    font-size: 14px;
+  }
+
+  .state-panel {
+    padding: 20px 12px;
+    min-height: 220px;
+  }
+
+  .state-panel p, .track-loading, .playback-error.alert {
+    font-size: 12px;
+  }
+
+  .playback-error.alert {
+    flex-wrap: wrap;
+    padding: 8px;
+  }
+
+  .page-footer {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 24px;
+    padding-top: 16px;
+    font-size: 10px;
+  }
+
+  .page-footer > span:last-child {
+    font-size: 9px;
+  }
+
+  .player-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'track extras' 'controls controls';
+    grid-template-rows: 40px minmax(0, 1fr);
+    align-items: center;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    gap: 4px 8px;
+    margin-inline: 0;
+  }
+
+  .player-track {
+    grid-area: track;
+    gap: 8px;
+  }
+
+  .player-track .track-art-small {
+    width: 36px;
+    height: 36px;
+  }
+
+  .player-track > div:not(.track-art) {
+    gap: 3px;
+  }
+
+  .player-track strong {
+    font-size: 12px;
+  }
+
+  .player-track span {
+    font-size: 10px;
+  }
+
+  .player-center {
+    grid-area: controls;
+    align-self: center;
+    max-width: none;
+  }
+
+  .playback-controls {
+    gap: 14px;
+    margin-bottom: 4px;
+  }
+
+  .playback-controls .icon-button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .player-bar .main-play {
+    width: 36px;
+    height: 36px;
+  }
+
+  .progress-controls {
+    gap: 8px;
+    min-height: 24px;
+  }
+
+  .progress-controls > span {
+    font-size: 10px;
+    min-width: 28px;
+  }
+
+  .progress-controls input {
+    width: 100%;
+    flex: 1;
+  }
+
+  .progress-controls input[type='range'] {
+    box-sizing: content-box;
+    padding: 0;
+    border-block: 10px solid transparent;
+    background-clip: content-box;
+  }
+
+  .player-extras {
+    grid-area: extras;
+    gap: 4px;
+  }
+
+  .player-extras input {
+    width: 52px;
+  }
+}
+
+@media (max-width: 1000px) and (max-height: 500px) and (orientation: landscape) {
+  .music-app:not(.playback-idle) {
+    --player-height: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .player-bar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr) auto;
+    grid-template-areas: 'track controls extras';
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .player-bar .main-play {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 374px) {
+  .quick-grid {
+    --quick-album-height: 36px;
+  }
+
+  .quick-track > span {
+    font-size: 10px;
+    line-height: 13px;
   }
 }
 

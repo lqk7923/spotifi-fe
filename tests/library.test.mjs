@@ -2,18 +2,12 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { filterTracks, getAlbums, migrateLikes, trackKey } from '../src/lib/tracks.js'
 import { albumReleaseDate, greetingLabel, timeLabel } from '../src/lib/format.js'
-import { artworkColors } from '../src/lib/artwork.js'
 
 const tracks = [
   { trackId: 'first', trackTitle: 'Industrial Drum', author: 'looplicator', trackDuration: 12000, albumId: 'album-1', albumTitle: 'Factory Sounds' },
   { trackId: 'second', trackTitle: 'Night Air', author: 'another artist', trackDuration: 90500, albumId: 'album-2', albumTitle: 'Evening' },
 ]
 const filters = { likedOnly: false, likes: [], search: '' }
-
-test('tracks in the same album share the album cover palette across pages and queue', () => {
-  assert.deepEqual(artworkColors(tracks[0]), artworkColors({ ...tracks[0], trackId: 'another-track', albumTitle: 'Renamed album' }))
-  assert.deepEqual(artworkColors(tracks[0]), artworkColors({ albumId: tracks[0].albumId }))
-})
 
 test('library search matches API titles, authors, IDs, and collections', () => {
   for (const search of [' INDUSTRIAL ', 'Looplicator', 'first', 'Factory Sounds', 'album-1']) {

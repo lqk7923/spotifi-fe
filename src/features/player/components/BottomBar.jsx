@@ -16,7 +16,7 @@ export default function BottomBar({ player, library, queueOpen, onToggleQueue })
       </div>
       <div className="player-extras">
         <IconButton
-          icon={ListMusic} label="Toggle queue" active={queueOpen} aria-pressed={queueOpen}
+          icon={ListMusic} label="Toggle queue" className="player-queue-toggle" active={queueOpen} aria-pressed={queueOpen}
           onClick={onToggleQueue}
         />
         <VolumeControl player={player} />

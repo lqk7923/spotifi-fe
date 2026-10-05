@@ -7,6 +7,11 @@ to Home; browser Back/Forward also works. The old `/home` URL redirects to `/`.
 The player remains mounted when navigating between Home and an album.
 Album IDs are URL-decoded without UUID validation or case conversion; the backend validates their format and existence.
 
+On mobile (up to 767px wide, or phone-sized landscape windows), the left library stays visible as a 64px cover/icon rail and the right queue is hidden.
+The Home album grid uses two columns with up to eight albums (four rows). Main sections retain their order with smaller covers, text, and spacing.
+Album artwork stays beside the album details. Track tables place album links under titles to fit narrow screens.
+The player keeps playback, seeking, and volume controls; it uses a shorter single row in landscape. Desktop sidebar sizing is retained when returning to a wider screen.
+
 Backend repository: [Spotifi backend](https://github.com/lqk7923/Spotifi.git).
 
 ## Run locally
@@ -38,7 +43,7 @@ Album banners and Home album hover colors are extracted from a 32×32 sample of 
 Dominant colored regions take priority over white/black borders; monochrome covers retain a neutral tint.
 The color is gently darkened to preserve cover brightness and readable white headings, then fades into the existing dark page background.
 Extracted colors are cached by the unsigned cover URL in localStorage (up to 100 entries), so reloads do not require decoding them again.
-Missing or unreadable covers retain the generated album palette. Banner transitions respect reduced-motion preferences.
+Missing, loading, or unreadable covers use a neutral dark gray banner (#242424) fading into black. Banner transitions respect reduced-motion preferences.
 Saved likes using the old bucket/track identity migrate to track IDs.
 Missing titles/authors fall back to track IDs/Unknown artist. API durations are converted from
 milliseconds to seconds for display and player controls; loaded audio metadata takes

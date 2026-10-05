@@ -1,7 +1,7 @@
 @property --home-banner-color {
   syntax: '<color>';
   inherits: true;
-  initial-value: #32297b;
+  initial-value: #242424;
 }
 
 .main-content.home-page {

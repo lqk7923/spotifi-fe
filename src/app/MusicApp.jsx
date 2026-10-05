@@ -39,7 +39,7 @@ export default function MusicApp({ albumId, page: Page }) {
         topBar={<TopBar search={library.search} onSearchChange={library.setSearch} searchRef={searchRef} onHome={showHome} />}
         leftSidebar={(
           <LibrarySidebar library={library} onSearch={focusSearch} onLibrary={focusLibrary}
-            collapsed={layout.sidebarCollapsed} onToggleCollapse={layout.toggleLibrary} />
+            collapsed={layout.sidebarCollapsed} compact={layout.isMobile} onToggleCollapse={layout.toggleLibrary} />
         )}
         rightSidebar={(
           <QueueSidebar tracks={library.collectionTracks} player={player} collapsed={layout.queueCollapsed}

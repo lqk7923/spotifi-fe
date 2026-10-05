@@ -11,6 +11,10 @@ const tracks = Array.from({ length: 9 }, (_, index) => ({
   albumTitle: index < 6 ? 'Sample Album' : 'Weekend Album',
 }))
 let mode = 'normal'
+const catalogTracks = () => mode === 'mobile-library' ? tracks.map((track, index) => ({
+  ...track, albumId: `00000000-0000-0000-0000-00000000000${index + 1}`,
+  albumTitle: `Sample Album ${index + 1}`,
+})) : tracks
 let requests = []
 let audioRequests = []
 const wave = Buffer.alloc(44 + 44100 * 2 * 180)
@@ -39,7 +43,7 @@ http.createServer(async (request, response) => {
   if (url.pathname === '/track/all') {
     response.setHeader('Content-Type', 'application/json')
     if (mode === 'list-error') { response.writeHead(500); response.end('{}'); return }
-    response.end(JSON.stringify(mode === 'empty' ? [] : mode === 'malformed' ? [null] : tracks))
+    response.end(JSON.stringify(mode === 'empty' ? [] : mode === 'malformed' ? [null] : catalogTracks()))
     return
   }
   if (url.pathname.startsWith('/album/')) {
@@ -47,7 +51,7 @@ http.createServer(async (request, response) => {
     if (mode === 'album-not-found') { response.writeHead(404); response.end('{}'); return }
     if (mode === 'album-error') { response.writeHead(500); response.end('{}'); return }
     const albumId = url.pathname.split('/')[2]
-    let albumTracks = tracks.filter((track) => track.albumId === albumId)
+    let albumTracks = catalogTracks().filter((track) => track.albumId === albumId)
     const album = albumTracks[0]
     if (!album || mode === 'empty') { response.writeHead(404); response.end('{}'); return }
     if (mode === 'album-switch') {
@@ -75,7 +79,7 @@ http.createServer(async (request, response) => {
     response.setHeader('Content-Type', 'application/json')
     response.end(JSON.stringify({
       trackPresignedLink: `http://localhost:8081/audio/${url.pathname.split('/').at(-1)}.wav?signature=${requests.length}`,
-      coverPresignedLink: tracks.find(track => track.trackId === url.pathname.split('/').at(-1))?.coverPresignedUrl || null,
+      coverPresignedLink: catalogTracks().find(track => track.trackId === url.pathname.split('/').at(-1))?.coverPresignedUrl || null,
     }))
     return
   }

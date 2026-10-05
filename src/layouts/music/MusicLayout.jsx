@@ -1,7 +1,7 @@
 import SidebarResizer from './sidebar/SidebarResizer.jsx'
 
 export default function MusicLayout({ layout, hasCurrentTrack, topBar, leftSidebar, rightSidebar, bottomBar, children }) {
-  const { leftWidth, rightWidth, sidebarCollapsed, queueCollapsed, resizeLeftSidebar, resizeRightSidebar } = layout
+  const { leftWidth, rightWidth, sidebarCollapsed, queueCollapsed, isMobile, resizeLeftSidebar, resizeRightSidebar } = layout
 
   return (
     <div
@@ -12,10 +12,10 @@ export default function MusicLayout({ layout, hasCurrentTrack, topBar, leftSideb
       <a className="skip-link" href="#all-tracks">Skip to tracks</a>
       {topBar}
       {leftSidebar}
-      <SidebarResizer side="left" controlsId="library-sidebar" width={leftWidth} onResize={resizeLeftSidebar} collapsible />
+      {!isMobile && <SidebarResizer side="left" controlsId="library-sidebar" width={leftWidth} onResize={resizeLeftSidebar} collapsible />}
       {children}
-      {!queueCollapsed && <SidebarResizer side="right" controlsId="playback-queue" width={rightWidth} onResize={resizeRightSidebar} />}
-      {rightSidebar}
+      {!isMobile && !queueCollapsed && <SidebarResizer side="right" controlsId="playback-queue" width={rightWidth} onResize={resizeRightSidebar} />}
+      {!isMobile && rightSidebar}
       {bottomBar}
     </div>
   )

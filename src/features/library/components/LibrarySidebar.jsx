@@ -4,7 +4,7 @@ import MediaListItem from '../../../components/music/MediaListItem.jsx'
 import ScrollArea from '../../../components/ui/ScrollArea.jsx'
 import SidebarPanel from '../../../layouts/music/sidebar/SidebarPanel.jsx'
 
-export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed, onToggleCollapse }) {
+export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed, compact = false, onToggleCollapse }) {
   const { selectedAlbum, albums, likedOnly, likedCount, resetFilters } = library
 
   const showAll = () => {
@@ -21,7 +21,7 @@ export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed
       <ScrollArea className="sidebar-scroll" contentClassName="sidebar-body" label="Library navigation" scrollbarLabel="Scroll library">
         <div className="sidebar-header">
           <h2 className="sidebar-heading">Your Library</h2>
-          <button
+          {compact ? <span className="sidebar-mobile-icon" aria-hidden="true"><Library size={24} /></span> : <button
             type="button" className="icon-button sidebar-toggle"
             aria-label={collapsed ? 'Expand library' : 'Collapse library'}
             title={collapsed ? 'Expand library' : 'Collapse library'}
@@ -33,7 +33,7 @@ export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed
                 <PanelLeftOpen className="sidebar-expand-icon" size={24} aria-hidden="true" />
               </>
             ) : <PanelLeftClose size={24} aria-hidden="true" />}
-          </button>
+          </button>}
         </div>
         <nav className="nav-links">
           <button className="nav-item" onClick={onSearch} aria-label="Search" title="Search"><Search size={23} />Search</button>

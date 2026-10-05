@@ -5,24 +5,36 @@ export default function useCover(item) {
   const url = coverUrl(item)
   const trackId = item?.trackId
   const albumId = item?.albumId
+  const identity = JSON.stringify([url, trackId, albumId])
   const [image, setImage] = useState(null)
 
   useEffect(() => {
     if (!url) return
     let active = true
     let objectUrl
-    coverCache.load({ coverPresignedUrl: url, trackId, albumId }).then(blob => {
-      if (!active || !blob) return
+    coverCache.load({ coverPresignedUrl: url, trackId, albumId }).then(async blob => {
+      if (!active) return
+      if (!blob) {
+        setImage({ identity, src: null })
+        return
+      }
       objectUrl = URL.createObjectURL(blob)
-      setImage({ source: url, objectUrl })
+      const preview = new Image()
+      preview.src = objectUrl
+      await preview.decode()
+      if (active) setImage({ identity, src: objectUrl })
     }).catch(() => {
-      // Keep the generated artwork when the cover is missing or unavailable.
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+      if (active) setImage({ identity, src: null })
     })
     return () => {
       active = false
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [url, trackId, albumId])
+  }, [url, trackId, albumId, identity])
 
-  return image?.source === url ? image.objectUrl : null
+  if (!url) return { src: null, loading: false }
+  return image?.identity === identity
+    ? { src: image.src, loading: false }
+    : { src: null, loading: true }
 }

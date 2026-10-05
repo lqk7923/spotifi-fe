@@ -41,7 +41,7 @@
   text-overflow: ellipsis;
 }
 
-.player-track span:not(.cover-label):not(.cover-id) {
+.player-track span {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);

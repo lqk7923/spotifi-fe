@@ -29,7 +29,7 @@ To change the backend address, copy `.env.example` to `.env.local` and set
 - `GET /album/{albumId}/tracks`: JSON album object `{ albumId, albumTitle, author, albumCoverPresignedUrl, releaseDate, albumTracks }`. Each item in `albumTracks` contains `{ trackId, trackTitle, trackDuration }`. Tracks inherit album metadata and its cover for playback and the queue. The release date shows the year with an English `Month dd yyyy` tooltip. HTTP 404 displays "Could not find that album"; network and server failures retain the retry state.
 - `GET /track/track/{trackId}`: JSON `{ "trackPresignedLink": "https://...", "coverPresignedLink": "https://..." }`, valid for two minutes. The track ID is URL-encoded; the bucket is configured on the server.
 
-The page uses API titles, authors, durations, and cover images, with generated illustrations as a fallback.
+The page uses API titles, authors, durations, and cover images. Covers show a subtle pulsing skeleton until the image has loaded and decoded; missing or failed images leave a plain dark tile. Reduced-motion preferences disable the pulse.
 Cover image bytes are cached in browser Cache Storage (up to 100 images), with a bounded memory fallback.
 AWS signing parameters are excluded from cache keys, so cached covers survive signed URL expiration and page reloads.
 Uncached covers rejected with 401/403 request a fresh URL and retry once. R2 must allow cross-origin GETs from the frontend for image caching.

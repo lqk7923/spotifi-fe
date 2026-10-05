@@ -45,15 +45,22 @@ export async function getAlbumTracks(albumId, signal) {
   return album
 }
 
-export async function getPlaybackUrl(track, signal) {
+export async function getTrackLinks(track, signal) {
   const response = await request(
-    `/track/${encodeURIComponent(track.bucketName)}/${encodeURIComponent(track.trackId)}`,
+    `/track/track/${encodeURIComponent(track.trackId)}`,
     signal,
   )
+  return response.json()
+}
+
+export async function getPlaybackUrl(track, signal) {
+  const data = await getTrackLinks(track, signal).catch(error => {
+    if (error instanceof SyntaxError) throw new Error('The music server did not return a valid audio URL.')
+    throw error
+  })
   let url
   let parsed
   try {
-    const data = await response.json()
     if (typeof data?.trackPresignedLink !== 'string') throw new Error('Missing audio URL')
     url = data.trackPresignedLink.trim()
     parsed = new URL(url)
@@ -67,7 +74,7 @@ export async function getPlaybackUrl(track, signal) {
 }
 
 export function getSigningEndpoint(track) {
-  return `${apiBase}/track/${encodeURIComponent(track.bucketName)}/${encodeURIComponent(track.trackId)}`
+  return `${apiBase}/track/track/${encodeURIComponent(track.trackId)}`
 }
 
 export function errorMessage(error, fallback) {

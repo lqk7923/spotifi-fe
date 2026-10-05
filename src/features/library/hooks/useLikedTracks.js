@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { trackKey } from '../../../lib/tracks.js'
+import { migrateLikes, trackKey } from '../../../lib/tracks.js'
 
 const LIKES_STORAGE_KEY = 'music-likes'
 
 function readLikes() {
   try {
     const saved = JSON.parse(localStorage.getItem(LIKES_STORAGE_KEY) || '[]')
-    return Array.isArray(saved) ? saved.filter(key => typeof key === 'string') : []
+    return migrateLikes(saved)
   } catch {
     return []
   }

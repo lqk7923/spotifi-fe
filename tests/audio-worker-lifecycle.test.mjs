@@ -35,7 +35,7 @@ test('rapid selections keep the latest prefix when older cache work is delayed',
       source: { id: owner },
       data: { type, path, prefix: new Uint8Array([1, 2]).buffer, total: 2,
         url: 'https://r2.example/audio', signedAt: Date.now(), audioType: 'audio/wav',
-        signingEndpoint: 'https://app.example/track/bucket/id' },
+        signingEndpoint: 'https://app.example/track/track/id' },
       ports: [{ postMessage(reply) { replies.push(reply) } }],
       waitUntil(promise) { completion = promise },
     })

@@ -7,7 +7,7 @@ export const NETWORK_PROFILES = {
 }
 
 const tracks = Array.from({ length: 5 }, (_, index) => ({
-  bucketName: 'benchmark-fixture', trackId: `sample-${index + 1}`,
+  trackId: `sample-${index + 1}`,
   trackTitle: `Silent WAV ${index + 1}`, trackDuration: 180000, author: 'Benchmark fixture',
 }))
 

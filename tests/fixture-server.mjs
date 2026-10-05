@@ -2,7 +2,7 @@
 import http from 'node:http'
 
 const tracks = Array.from({ length: 9 }, (_, index) => ({
-  bucketName: index < 6 ? 'music-bucket' : 'weekend-collection',
+  coverPresignedUrl: `http://localhost:8081/covers/${index < 6 ? 1 : 2}.svg?X-Amz-Signature=fixture`,
   trackId: `${['550e8400', '7ab2c391', 'a83d1940', 'c982a01e', 'bd43d971', '42b7f310', 'e743bd82', '127cb894', '32c974bb'][index]}-e29b-41d4-a716-44665544000${index}`,
   trackTitle: index === 0 ? 'Industrial Drum' : `Sample Track ${index + 1}`,
   trackDuration: 180000,
@@ -58,13 +58,15 @@ http.createServer(async (request, response) => {
       albumId: album.albumId,
       albumTitle: album.albumTitle,
       author: album.author,
-      albumTracks: albumTracks.map(({ bucketName, trackId, trackTitle, trackDuration }) => ({
-        bucketName, trackId, trackTitle, trackDuration,
+      albumCoverPresignedUrl: album.coverPresignedUrl,
+      releaseDate: '2026-10-05',
+      albumTracks: albumTracks.map(({ trackId, trackTitle, trackDuration }) => ({
+        trackId, trackTitle, trackDuration,
       })),
     }))
     return
   }
-  if (url.pathname.startsWith('/track/')) {
+  if (url.pathname.startsWith('/track/track/')) {
     requests.push(url.pathname)
     if (mode === 'playback-error') { response.writeHead(500); response.end('Track not found'); return }
     if (mode === 'race' && url.pathname.endsWith(tracks[0].trackId)) {
@@ -73,7 +75,14 @@ http.createServer(async (request, response) => {
     response.setHeader('Content-Type', 'application/json')
     response.end(JSON.stringify({
       trackPresignedLink: `http://localhost:8081/audio/${url.pathname.split('/').at(-1)}.wav?signature=${requests.length}`,
+      coverPresignedLink: tracks.find(track => track.trackId === url.pathname.split('/').at(-1))?.coverPresignedUrl || null,
     }))
+    return
+  }
+  if (url.pathname.startsWith('/covers/')) {
+    response.setHeader('Content-Type', 'image/svg+xml')
+    const color = url.pathname.endsWith('1.svg') ? '#cf6a35' : '#3366aa'
+    response.end(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="${color}"/><circle cx="256" cy="256" r="150" fill="#171717"/><circle cx="256" cy="256" r="40" fill="${color}"/></svg>`)
     return
   }
   if (url.pathname.startsWith('/audio/')) {

@@ -21,7 +21,7 @@ export default function AlbumActions({ library, player }) {
           void (albumTrackSelected ? player.togglePlayback() : player.startTrack(visibleTracks[0]))
         }}
       >
-        <TrackPlaybackIcon selected={albumTrackSelected} player={player} size={28} />
+        <TrackPlaybackIcon selected={albumTrackSelected} player={player} size={24} />
       </button>
       <IconButton
         icon={Shuffle} label="Shuffle album" active={player.shuffle} aria-pressed={player.shuffle}

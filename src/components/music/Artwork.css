@@ -31,6 +31,15 @@
   background: #ffffff17;
 }
 
+.cover-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 3;
+}
+
 .cover-label {
   position: absolute;
   left: 10%;

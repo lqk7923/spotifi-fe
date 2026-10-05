@@ -8,7 +8,7 @@ const file = Uint8Array.from({ length: 24 }, (_, index) => index)
 const source = () => ({
   path: '/__audio_preload__/test', prefix: file.slice(0, 8).buffer,
   total: file.length, type: 'audio/wav', url: 'https://r2.example/old',
-  signedAt: Date.now(), signingEndpoint: 'https://app.example/track/bucket/track',
+  signedAt: Date.now(), signingEndpoint: 'https://app.example/track/track/track',
 })
 const request = (range) => new Request('https://app.example/__audio_preload__/test', {
   headers: range ? { Range: range } : {},
@@ -170,7 +170,7 @@ test('changing the predicted track cancels the old preload', () => {
 })
 
 test('disabled preload does no background fetch and selected tracks still play directly', async () => {
-  const track = { bucketName: 'bucket', trackId: 'track' }
+  const track = { trackId: 'track' }
   const controller = new AbortController()
   const calls = []
   const preloader = new AudioPreloader({
@@ -203,17 +203,17 @@ test('disabled preload respects canceled playback before requesting a signed URL
   })
   const controller = new AbortController()
   controller.abort()
-  await assert.rejects(preloader.source({ bucketName: 'bucket', trackId: 'track' }, controller.signal), { name: 'AbortError' })
+  await assert.rejects(preloader.source({ trackId: 'track' }, controller.signal), { name: 'AbortError' })
 })
 
 test('failed preload falls back to an already acquired, valid signed URL', async () => {
   const preloader = new AudioPreloader()
   preloader.next = {
-    key: 'bucket/track', ready: Promise.resolve(), controller: new AbortController(),
+    key: 'track', ready: Promise.resolve(), controller: new AbortController(),
     url: 'https://r2.example/valid', signedAt: Date.now(),
   }
   mock.method(globalThis, 'fetch', () => assert.fail('Unnecessary signing call'))
-  const result = await preloader.source({ bucketName: 'bucket', trackId: 'track' }, new AbortController().signal)
+  const result = await preloader.source({ trackId: 'track' }, new AbortController().signal)
   assert.equal(result.url, 'https://r2.example/valid')
   assert.equal(result.cached, false)
 })
@@ -221,14 +221,14 @@ test('failed preload falls back to an already acquired, valid signed URL', async
 test('selection renews an expired preload URL through the JSON signing API', async () => {
   const preloader = new AudioPreloader()
   preloader.next = {
-    key: 'bucket/track', ready: Promise.resolve(), controller: new AbortController(),
+    key: 'track', ready: Promise.resolve(), controller: new AbortController(),
     url: 'https://r2.example/expired', signedAt: Date.now() - 120_000,
   }
   mock.method(globalThis, 'fetch', async (url) => {
-    assert.equal(url, '/track/bucket/track')
+    assert.equal(url, '/track/track/track')
     return Response.json({ trackPresignedLink: 'https://r2.example/renewed' })
   })
-  const result = await preloader.source({ bucketName: 'bucket', trackId: 'track' }, new AbortController().signal)
+  const result = await preloader.source({ trackId: 'track' }, new AbortController().signal)
   assert.equal(result.url, 'https://r2.example/renewed')
   assert.equal(result.cached, false)
   assert.ok(Date.now() - result.signedAt < 1000)
@@ -251,11 +251,11 @@ test('canceling selection cancels an in-flight preload', async () => {
   const preloader = new AudioPreloader()
   const controller = new AbortController()
   preloader.next = {
-    key: 'bucket/track', controller,
+    key: 'track', controller,
     ready: new Promise((resolve) => controller.signal.addEventListener('abort', resolve)),
   }
   const selection = new AbortController()
-  const pending = preloader.source({ bucketName: 'bucket', trackId: 'track' }, selection.signal)
+  const pending = preloader.source({ trackId: 'track' }, selection.signal)
   selection.abort()
   await assert.rejects(pending, { name: 'AbortError' })
   assert.equal(controller.signal.aborted, true)
@@ -265,11 +265,11 @@ test('a slow preload is abandoned so selection can use native playback', { timeo
   const preloader = new AudioPreloader()
   const controller = new AbortController()
   preloader.next = {
-    key: 'bucket/track', controller, ready: new Promise(() => {}),
+    key: 'track', controller, ready: new Promise(() => {}),
     url: 'https://r2.example/valid', signedAt: Date.now(),
   }
   mock.method(globalThis, 'fetch', () => assert.fail('Unnecessary signing call'))
-  const result = await preloader.source({ bucketName: 'bucket', trackId: 'track' }, new AbortController().signal)
+  const result = await preloader.source({ trackId: 'track' }, new AbortController().signal)
   assert.equal(result.url, 'https://r2.example/valid')
   assert.equal(controller.signal.aborted, true)
 })
@@ -287,18 +287,18 @@ test('cached selection publishes the prefix, preserves track identity and releas
     const preloader = new AudioPreloader()
     const signedAt = Date.now() - 130_000
     preloader.next = {
-      key: 'bucket/track', controller: new AbortController(), ready: Promise.resolve(), worker,
+      key: 'track', controller: new AbortController(), ready: Promise.resolve(), worker,
       url: 'https://r2.example/expired', signedAt,
       data: { prefix: file.buffer, total: file.length, audioType: 'audio/wav' },
     }
     mock.method(globalThis, 'fetch', () => assert.fail('Cached playback does not wait for signing'))
-    const result = await preloader.source({ bucketName: 'bucket', trackId: 'track' }, new AbortController().signal)
+    const result = await preloader.source({ trackId: 'track' }, new AbortController().signal)
     assert.equal(result.cached, true)
     assert.equal(result.signedAt, signedAt)
     assert.match(result.url, /^\/__audio_preload__\//)
     assert.equal(messages[0].type, 'store')
     assert.equal(messages[0].audioType, 'audio/wav')
-    assert.equal(messages[0].signingEndpoint, 'https://app.example/track/bucket/track')
+    assert.equal(messages[0].signingEndpoint, 'https://app.example/track/track/track')
     assert.equal(preloader.next, null)
     preloader.release()
     assert.deepEqual(messages[1], { type: 'release', path: result.url })

@@ -1,8 +1,10 @@
 import { AudioLines } from 'lucide-react'
 import { artworkColors } from '../../lib/artwork.js'
+import useCover from './useCover.js'
 
 export default function Artwork({ track, small = false }) {
   const colors = artworkColors(track)
+  const cover = useCover(track)
 
   return (
     <div
@@ -16,6 +18,8 @@ export default function Artwork({ track, small = false }) {
       <span className="cover-id">
         {track?.trackId?.slice(0, 4).toUpperCase() || 'MUSIC'}
       </span>
+      {cover && <img key={cover} className="cover-image" src={cover} alt="" decoding="async"
+        onError={event => { event.currentTarget.hidden = true }} />}
     </div>
   )
 }

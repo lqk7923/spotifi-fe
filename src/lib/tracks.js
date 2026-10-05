@@ -1,6 +1,5 @@
 /**
  * @typedef {Object} AlbumTrack
- * @property {string} bucketName
  * @property {string} trackId
  * @property {string} trackTitle
  * @property {number} trackDuration Duration in milliseconds.
@@ -11,6 +10,8 @@
  * @property {string} albumId
  * @property {string} albumTitle
  * @property {string} author
+ * @property {string|null} albumCoverPresignedUrl
+ * @property {string|null} releaseDate
  * @property {AlbumTrack[]} albumTracks
  */
 
@@ -20,7 +21,7 @@
  */
 
 export function trackKey(track) {
-  return `${track.bucketName}/${track.trackId}`
+  return track.trackId
 }
 
 export function trackLabel(track) {
@@ -28,7 +29,7 @@ export function trackLabel(track) {
 }
 
 export function trackAuthor(track) {
-  return track.author?.trim() || track.bucketName
+  return track.author?.trim() || 'Unknown artist'
 }
 
 export function trackDurationSeconds(track) {
@@ -39,7 +40,7 @@ export function trackDurationSeconds(track) {
 }
 
 export function isValidTrack(track) {
-  if (!track || typeof track.bucketName !== 'string' || !track.bucketName) return false
+  if (!track || Array.isArray(track)) return false
   if (typeof track.trackId !== 'string' || !track.trackId) return false
   if (typeof track.albumId !== 'string' || !track.albumId.trim()) return false
   if (typeof track.albumTitle !== 'string') return false
@@ -58,7 +59,6 @@ export function isValidAlbum(album) {
   if (typeof album.albumTitle !== 'string' || typeof album.author !== 'string') return false
   return Array.isArray(album.albumTracks) && album.albumTracks.every((track) => (
     !!track && !Array.isArray(track)
-    && typeof track.bucketName === 'string' && !!track.bucketName
     && typeof track.trackId === 'string' && !!track.trackId
     && typeof track.trackTitle === 'string'
     && Number.isFinite(track.trackDuration) && track.trackDuration >= 0
@@ -70,23 +70,37 @@ export function isValidAlbum(album) {
  * @returns {Track[]}
  */
 export function getAlbumQueue(album) {
-  const { albumId, albumTitle, author } = album
-  const tracks = album.albumTracks.map((track) => ({ ...track, albumId, albumTitle, author }))
+  const { albumId, albumTitle, author, albumCoverPresignedUrl } = album
+  const tracks = album.albumTracks.map((track) => ({
+    ...track, albumId, albumTitle, author,
+    coverPresignedUrl: albumCoverPresignedUrl ?? track.coverPresignedUrl ?? null,
+  }))
   return [...new Map(tracks.map((track) => [trackKey(track), track])).values()]
 }
 
-export function filterTracks(tracks, { bucket, likedOnly, likes, search }) {
+export function filterTracks(tracks, { likedOnly, likes, search }) {
   const query = search.toLowerCase().trim()
   return tracks.filter((track) => {
-    if (bucket && track.bucketName !== bucket) return false
     if (likedOnly && !likes.includes(trackKey(track))) return false
-    const text = `${trackLabel(track)} ${trackAuthor(track)} ${track.trackId} ${track.bucketName} ${track.albumTitle} ${track.albumId}`
+    const text = `${trackLabel(track)} ${trackAuthor(track)} ${track.trackId} ${track.albumTitle} ${track.albumId}`
     return text.toLowerCase().includes(query)
   })
 }
 
 export function getAlbums(tracks) {
-  return [...new Map(tracks.map(({ albumId, albumTitle, author }) => [
-    albumId, { albumId, albumTitle, author },
-  ])).values()]
+  const albums = new Map()
+  for (const { albumId, albumTitle, author, coverPresignedUrl } of tracks) {
+    const previous = albums.get(albumId)
+    albums.set(albumId, {
+      albumId, albumTitle, author,
+      albumCoverPresignedUrl: coverPresignedUrl || previous?.albumCoverPresignedUrl || null,
+    })
+  }
+  return [...albums.values()]
+}
+
+export function migrateLikes(saved) {
+  return Array.isArray(saved)
+    ? [...new Set(saved.filter(key => typeof key === 'string').map(key => key.split('/').at(-1)).filter(Boolean))]
+    : []
 }

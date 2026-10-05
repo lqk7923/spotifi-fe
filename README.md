@@ -25,12 +25,17 @@ To change the backend address, copy `.env.example` to `.env.local` and set
 
 ## Music API
 
-- `GET /track/all`: direct JSON array of `{ bucketName, trackId, trackTitle, trackDuration, author, albumId, albumTitle }`. `trackDuration` is milliseconds (for example, `12000` means 12 seconds). `author` is the album author; only tracks with a matching album are returned.
-- `GET /album/{albumId}/tracks`: JSON album object `{ albumId, albumTitle, author, albumTracks }`. Each item in `albumTracks` contains `{ bucketName, trackId, trackTitle, trackDuration }`. Opening an album in the sidebar or track table fetches this endpoint using the UUID from the track response. The header reads the album's title and author directly; tracks inherit these fields and `albumId` for playback, search, and the queue. The backend returns an error for empty or nonexistent albums. HTTP 404 displays "Could not find that album". Network and server failures retain the retry state.
-- `GET /track/{bucket}/{trackId}`: JSON `{ "trackPresignedLink": "https://..." }`, valid for two minutes. Both path parameters are URL-encoded.
+- `GET /track/all`: direct JSON array of `{ trackId, trackTitle, trackDuration, author, albumId, albumTitle, coverPresignedUrl }`. `trackDuration` is milliseconds (for example, `12000` means 12 seconds). `author` is the album author; only tracks with a matching album are returned.
+- `GET /album/{albumId}/tracks`: JSON album object `{ albumId, albumTitle, author, albumCoverPresignedUrl, releaseDate, albumTracks }`. Each item in `albumTracks` contains `{ trackId, trackTitle, trackDuration }`. Tracks inherit album metadata and its cover for playback and the queue. The release date shows the year with an English `Month dd yyyy` tooltip. HTTP 404 displays "Could not find that album"; network and server failures retain the retry state.
+- `GET /track/track/{trackId}`: JSON `{ "trackPresignedLink": "https://...", "coverPresignedLink": "https://..." }`, valid for two minutes. The track ID is URL-encoded; the bucket is configured on the server.
 
-The page uses real API titles, authors, and durations with generated cover illustrations.
-Missing titles/authors fall back to IDs/collections. API durations are converted from
+The page uses API titles, authors, durations, and cover images, with generated illustrations as a fallback.
+Cover image bytes are cached in browser Cache Storage (up to 100 images), with a bounded memory fallback.
+AWS signing parameters are excluded from cache keys, so cached covers survive signed URL expiration and page reloads.
+Uncached covers rejected with 401/403 request a fresh URL and retry once. R2 must allow cross-origin GETs from the frontend for image caching.
+Use a new object path or version query when replacing a cover so browsers can distinguish it from an existing cached image.
+Saved likes using the old bucket/track identity migrate to track IDs.
+Missing titles/authors fall back to track IDs/Unknown artist. API durations are converted from
 milliseconds to seconds for display and player controls; loaded audio metadata takes
 precedence. An unavailable backend shows a retry state; an empty database shows an
 empty library.

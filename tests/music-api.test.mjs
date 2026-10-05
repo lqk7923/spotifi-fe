@@ -1,30 +1,32 @@
 import assert from 'node:assert/strict'
 import { afterEach, test, mock } from 'node:test'
-import { getAlbumTracks, getPlaybackUrl, getSigningEndpoint, getTracks } from '../src/services/music-api.js'
+import { getAlbumTracks, getPlaybackUrl, getSigningEndpoint, getTrackLinks, getTracks } from '../src/services/music-api.js'
 import { getAlbumQueue, trackAuthor, trackDurationSeconds, trackLabel } from '../src/lib/tracks.js'
 import { albumPath, resolveRoute } from '../src/app/routing/navigation.js'
 
 afterEach(() => mock.restoreAll())
 const track = {
-  bucketName: 'music-bucket', trackId: '550e8400-e29b-41d4-a716-446655440000',
+  trackId: '550e8400-e29b-41d4-a716-446655440000',
+  coverPresignedUrl: 'https://r2.example/cover.jpg?X-Amz-Signature=abc',
   trackTitle: 'Industrial Drum', trackDuration: 12000, author: 'looplicator',
   albumId: '00000000-0000-0000-0000-000000000001', albumTitle: 'Industrial Drum',
 }
 const albumTrack = {
-  bucketName: track.bucketName, trackId: track.trackId,
+  trackId: track.trackId,
   trackTitle: track.trackTitle, trackDuration: track.trackDuration,
 }
 const album = {
   albumId: track.albumId, albumTitle: track.albumTitle,
   author: track.author, albumTracks: [albumTrack],
+  albumCoverPresignedUrl: track.coverPresignedUrl, releaseDate: '2026-10-05',
 }
 
 test('loads the documented track list and removes duplicate identities', async () => {
   mock.method(globalThis, 'fetch', async (url) => {
     assert.equal(url, '/track/all')
-    return Response.json([track, track, { ...track, bucketName: 'another-bucket' }])
+    return Response.json([track, track, { ...track, trackId: 'another-track' }])
   })
-  assert.deepEqual(await getTracks(), [track, { ...track, bucketName: 'another-bucket' }])
+  assert.deepEqual(await getTracks(), [track, { ...track, trackId: 'another-track' }])
 })
 
 test('supports an empty database', async () => {
@@ -43,13 +45,12 @@ test('loads album metadata and nested tracks from the album endpoint', async () 
   assert.equal(result.albumTracks[0].albumId, undefined)
 })
 
-test('keeps album track order and deduplicates queue identities within buckets', async () => {
+test('keeps album track order and deduplicates by track ID', async () => {
   const secondTrack = { ...albumTrack, trackId: 'second-track' }
-  const otherBucket = { ...albumTrack, bucketName: 'another-bucket' }
-  const responseAlbum = { ...album, albumTracks: [secondTrack, albumTrack, albumTrack, otherBucket] }
+  const responseAlbum = { ...album, albumTracks: [secondTrack, albumTrack, albumTrack] }
   mock.method(globalThis, 'fetch', async () => Response.json(responseAlbum))
   assert.deepEqual(getAlbumQueue(await getAlbumTracks(track.albumId)), [
-    { ...track, trackId: 'second-track' }, track, { ...track, bucketName: 'another-bucket' },
+    { ...track, trackId: 'second-track' }, track,
   ])
 })
 
@@ -64,7 +65,7 @@ test('uses album metadata for queue entries even if a track contains stale album
 })
 
 test('rejects old array responses and malformed album metadata or nested tracks', async () => {
-  const invalidTracks = [null, {}, { ...albumTrack, bucketName: '' },
+  const invalidTracks = [null, {},
     { ...albumTrack, trackId: '' }, { ...albumTrack, trackTitle: {} },
     { ...albumTrack, trackTitle: undefined }, { ...albumTrack, trackDuration: '12000' },
     { ...albumTrack, trackDuration: -1 }, { ...albumTrack, trackDuration: undefined }]
@@ -125,13 +126,13 @@ test('rejects malformed track responses before rendering', async () => {
   }
 })
 
-test('reads signed URLs from JSON and escapes both path parameters', async () => {
+test('reads signed URLs from JSON and escapes the track ID without a bucket', async () => {
   mock.method(globalThis, 'fetch', async (url, options) => {
-    assert.equal(url, '/track/a%2Fb%20c/track%2Fid')
+    assert.equal(url, '/track/track/track%2Fid')
     assert.equal(options.cache, 'no-store')
     return Response.json({ trackPresignedLink: ' https://r2.example/audio?X-Amz-Signature=abc\n' })
   })
-  assert.equal(await getPlaybackUrl({ bucketName: 'a/b c', trackId: 'track/id' }),
+  assert.equal(await getPlaybackUrl({ trackId: 'track/id' }),
     'https://r2.example/audio?X-Amz-Signature=abc')
 })
 
@@ -164,8 +165,14 @@ test('uses track metadata and converts milliseconds into player seconds', () => 
   assert.equal(trackDurationSeconds({ trackDuration: 0 }), 0)
   assert.equal(trackDurationSeconds({}), null)
   assert.equal(trackLabel({ ...track, trackTitle: ' ' }), 'Track 550e8400')
-  assert.equal(trackAuthor({ ...track, author: null }), 'music-bucket')
-  assert.equal(getSigningEndpoint({ bucketName: 'a/b c', trackId: 'track/id' }), '/track/a%2Fb%20c/track%2Fid')
+  assert.equal(trackAuthor({ ...track, author: null }), 'Unknown artist')
+  assert.equal(getSigningEndpoint({ trackId: 'track/id' }), '/track/track/track%2Fid')
+})
+
+test('track detail exposes both signed audio and cover links', async () => {
+  const links = { trackPresignedLink: 'https://r2.example/audio', coverPresignedLink: track.coverPresignedUrl }
+  mock.method(globalThis, 'fetch', async () => Response.json(links))
+  assert.deepEqual(await getTrackLinks(track), links)
 })
 
 test('forwards request cancellation when a track is superseded', async () => {

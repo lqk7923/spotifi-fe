@@ -85,13 +85,53 @@
 }
 
 .album-meta {
-  color: #fff;
+  color: #b3b3b3;
   font-size: 14px;
+  font-weight: 500;
   line-height: 1.5;
 }
 
-.album-total-duration {
-  color: #ffffffb3;
+.album-release {
+  position: relative;
+  display: inline-block;
+}
+
+.album-release time:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.album-release-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 10;
+  transform: translateX(-50%);
+  padding: 5px 8px;
+  border-radius: 3px;
+  background: #282828;
+  box-shadow: 0 3px 10px #0005;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 17px;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.album-release-tooltip::before {
+  content: '';
+  position: absolute;
+  inset: -8px 0 100%;
+}
+
+.album-release:not([data-dismissed="true"]):is(:hover, :focus-within) .album-release-tooltip {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .album-content {

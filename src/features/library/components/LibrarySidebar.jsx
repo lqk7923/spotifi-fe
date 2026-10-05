@@ -40,10 +40,10 @@ export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed
         </nav>
         <div className="nav-collection">
           <button className="nav-item" onClick={showAll} aria-label="All tracks" title="All tracks">
-            <span className="square-icon"><ListMusic size={19} /></span>All tracks
+            <span className="square-icon"><ListMusic size={28} /></span>All tracks
           </button>
           <button className={`nav-item ${likedOnly ? 'nav-active' : ''}`} onClick={showLiked} aria-label={`Liked Songs, ${likedCount} tracks`} title="Liked Songs">
-            <span className="square-icon liked-square"><Heart size={16} fill="currentColor" /></span>
+            <span className="square-icon liked-square"><Heart size={24} fill="currentColor" /></span>
             Liked Songs<span className="nav-count">{likedCount}</span>
           </button>
         </div>

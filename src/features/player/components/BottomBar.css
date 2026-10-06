@@ -165,6 +165,25 @@
   width: 83px;
 }
 
+.player-extras .icon-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.player-extras input[type='range'] {
+  height: 4px;
+}
+
+.player-extras input[type='range']::-webkit-slider-thumb {
+  width: 10px;
+  height: 10px;
+}
+
+.player-extras input[type='range']::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+}
+
 .main-play.icon-button {
   background: #fff;
   color: #000;

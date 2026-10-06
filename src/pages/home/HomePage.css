@@ -76,8 +76,6 @@
 }
 
 .quick-grid {
-  --quick-album-height: clamp(50px, calc((100cqi - 24px) / 20), 64px);
-  container-type: inline-size;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-auto-flow: row;
@@ -92,19 +90,114 @@
   max-width: 320px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 2.5cqi, 8px);
   text-align: left;
   background: #ffffff1f;
   backdrop-filter: blur(12px);
   border: 0;
-  border-radius: 5px;
+  border-radius: clamp(3px, 1.5625cqi, 5px);
   overflow: hidden;
   transition: background .2s;
-  padding: 0 12px 0 0;
+  padding: 0 clamp(6px, 3.75cqi, 12px) 0 0;
 }
 
-.quick-track:hover {
+.quick-album:hover .quick-track, .quick-album:has(:focus-visible) .quick-track {
   background: #ffffff33;
+}
+
+.quick-album {
+  --quick-album-height: clamp(32px, 20cqi, 64px);
+  --quick-play-size: min(calc(var(--quick-album-height) - 4px), clamp(28px, 12.5cqi, 40px));
+  --quick-play-inset: clamp(6px, 2.5cqi, 8px);
+  container-type: inline-size;
+  position: relative;
+  min-width: 0;
+  max-width: 320px;
+}
+
+.quick-album:is(:hover, :has(:focus-visible)) {
+  z-index: 2;
+}
+
+.quick-album .quick-track {
+  width: 100%;
+}
+
+.quick-album:is(:hover, :has(:focus-visible)) .quick-track {
+  padding-right: calc(var(--quick-play-size) + 2 * var(--quick-play-inset));
+}
+
+.quick-album-play-control {
+  position: absolute;
+  right: var(--quick-play-inset);
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+}
+
+.quick-album:is(:hover, :has(:focus-visible)) .quick-album-play-control {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.quick-album-play {
+  display: grid;
+  place-items: center;
+  width: var(--quick-play-size);
+  height: var(--quick-play-size);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--green);
+  color: #000;
+  box-shadow: 0 6px 14px #0005;
+  transition: transform .15s, background .15s;
+}
+
+.quick-album-play:hover:not(:disabled) {
+  background: #32e773;
+  transform: scale(1.05);
+}
+
+.quick-album-play svg {
+  width: 50%;
+  height: 50%;
+}
+
+.home-play-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 10;
+  transform: translateX(-50%);
+  padding: 5px 8px;
+  border-radius: 3px;
+  background: #282828;
+  box-shadow: 0 3px 10px #0005;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 17px;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.home-play-tooltip::before {
+  content: '';
+  position: absolute;
+  inset: 100% 0 -8px;
+}
+
+.quick-album-play-control:not([data-dismissed="true"]):is(:hover, :has(:focus-visible)) .home-play-tooltip,
+.artwork-button:not([data-dismissed="true"]) .card-play:hover .home-play-tooltip,
+.artwork-button:not([data-dismissed="true"]):focus-visible .home-play-tooltip {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .quick-track > span {
@@ -115,8 +208,8 @@
   -webkit-line-clamp: 2;
   line-clamp: 2;
   font-weight: 650;
-  font-size: 14px;
-  line-height: 18px;
+  font-size: clamp(10px, calc(6px + 2.5cqi), 14px);
+  line-height: 1.28;
   white-space: normal;
   overflow-wrap: anywhere;
   overflow: hidden;
@@ -129,7 +222,9 @@
 }
 
 .quick-skeleton {
-  height: var(--quick-album-height);
+  aspect-ratio: 5;
+  min-height: 32px;
+  max-height: 64px;
   border-radius: 5px;
   background: #ffffff12;
 }

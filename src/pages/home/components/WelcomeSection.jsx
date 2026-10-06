@@ -1,11 +1,9 @@
 import { AudioLines } from 'lucide-react'
 import { greetingLabel } from '../../../lib/format.js'
-import { albumPath } from '../../../app/routing/navigation.js'
 import { getAlbums } from '../../../lib/tracks.js'
-import AppLink from '../../../app/routing/AppLink.jsx'
-import Artwork from '../../../components/music/Artwork.jsx'
+import QuickAlbum from './QuickAlbum.jsx'
 
-export default function WelcomeSection({ library, onAlbumHover }) {
+export default function WelcomeSection({ library, player, onAlbumHover }) {
   const { loading, error, visibleTracks } = library
   const albums = getAlbums(visibleTracks).slice(0, 8)
   let content = <p className="welcome-copy">A little music. A better day. Find your next track below.</p>
@@ -20,12 +18,8 @@ export default function WelcomeSection({ library, onAlbumHover }) {
     content = (
       <div className="quick-grid">
         {albums.map((album) => (
-          <AppLink key={album.albumId} href={albumPath(album.albumId)} className="quick-track"
-            onPointerEnter={() => onAlbumHover?.(album)} onFocus={() => onAlbumHover?.(album)}
-            aria-label={`Open album ${album.albumTitle}`} title={album.albumTitle}>
-            <Artwork track={album} small />
-            <span>{album.albumTitle}</span>
-          </AppLink>
+          <QuickAlbum key={album.albumId} album={album} tracks={library.collectionTracks}
+            player={player} onAlbumHover={onAlbumHover} />
         ))}
       </div>
     )
@@ -41,4 +35,3 @@ export default function WelcomeSection({ library, onAlbumHover }) {
     </section>
   )
 }
-

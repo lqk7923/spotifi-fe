@@ -12,7 +12,7 @@ export default function HomePage({ library, player, libraryRef, onLibrary, mainR
 
   return (
     <MainContent scrollRef={mainRef} className="home-page" style={{ '--home-banner-color': bannerColor }} header={<HomeCategories />}>
-      <WelcomeSection library={library} onAlbumHover={setHoveredAlbum} />
+      <WelcomeSection library={library} player={player} onAlbumHover={setHoveredAlbum} />
       <div className="content-sections">
         <DiscoverSection library={library} player={player} onLibrary={onLibrary} />
         <TrackLibrary library={library} player={player} libraryRef={libraryRef} />

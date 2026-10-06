@@ -185,7 +185,6 @@
   }
 
   .quick-grid {
-    --quick-album-height: 44px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
     margin-inline: 0;
@@ -194,13 +193,6 @@
 
   .quick-track {
     max-width: none;
-    gap: 6px;
-    padding-right: 6px;
-  }
-
-  .quick-track > span {
-    font-size: 11px;
-    line-height: 14px;
   }
 
   .content-sections, .content-sections.album-content {
@@ -537,17 +529,6 @@
   .player-bar .main-play {
     width: 32px;
     height: 32px;
-  }
-}
-
-@media (max-width: 374px) {
-  .quick-grid {
-    --quick-album-height: 36px;
-  }
-
-  .quick-track > span {
-    font-size: 10px;
-    line-height: 13px;
   }
 }
 

@@ -8,17 +8,26 @@ export default function QuickAlbum({ album, tracks, player, onAlbumHover }) {
   const tooltipId = useId()
   const [tooltipDismissed, setTooltipDismissed] = useState(false)
   const selected = player.currentTrack?.albumId === album.albumId
+  const isPlaying = selected && player.isPlaying && !player.isLoading
   const action = selected && player.isPlaying ? 'Pause' : 'Play'
   const firstTrack = tracks.find(track => track.albumId === album.albumId)
 
   return (
-    <div className="quick-album"
+    <div className={`quick-album${isPlaying ? ' is-playing' : ''}`}
       onPointerEnter={() => onAlbumHover?.(album)} onFocus={() => onAlbumHover?.(album)}>
       <AppLink href={albumPath(album.albumId)} className="quick-track"
         aria-label={`Open album ${album.albumTitle}`} title={album.albumTitle}>
         <Artwork track={album} small />
         <span>{album.albumTitle}</span>
       </AppLink>
+      {isPlaying && (
+        <div className="quick-album-playing" role="img" aria-label="Now playing">
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </div>
+      )}
       <div className="quick-album-play-control" data-dismissed={tooltipDismissed}
         onMouseEnter={() => setTooltipDismissed(false)}
         onFocus={() => setTooltipDismissed(false)}

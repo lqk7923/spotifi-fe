@@ -106,7 +106,7 @@
 }
 
 .quick-album {
-  --quick-album-height: clamp(32px, 20cqi, 64px);
+  --quick-album-height: clamp(36px, 20cqi, 64px);
   --quick-play-size: min(calc(var(--quick-album-height) - 4px), clamp(28px, 12.5cqi, 40px));
   --quick-play-inset: clamp(6px, 2.5cqi, 8px);
   container-type: inline-size;
@@ -123,8 +123,66 @@
   width: 100%;
 }
 
-.quick-album:is(:hover, :has(:focus-visible)) .quick-track {
+.quick-album:is(.is-playing, :hover, :has(:focus-visible)) .quick-track {
   padding-right: calc(var(--quick-play-size) + 2 * var(--quick-play-inset));
+}
+
+.quick-album-playing {
+  position: absolute;
+  right: var(--quick-play-inset);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  width: var(--quick-play-size);
+  height: 18px;
+  color: var(--green);
+  pointer-events: none;
+}
+
+.quick-album-playing > span {
+  width: 3px;
+  height: 100%;
+  border-radius: 1px;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: quick-album-equalizer .8s ease-in-out infinite alternate;
+}
+
+.quick-album-playing > span:nth-child(1) {
+  height: 55%;
+  animation-delay: -.3s;
+}
+
+.quick-album-playing > span:nth-child(2) {
+  animation-delay: -.7s;
+}
+
+.quick-album-playing > span:nth-child(3) {
+  height: 75%;
+  animation-delay: -.1s;
+}
+
+.quick-album-playing > span:nth-child(4) {
+  height: 40%;
+  animation-delay: -.5s;
+}
+
+.quick-album:is(:hover, :has(:focus-visible)) .quick-album-playing {
+  visibility: hidden;
+}
+
+@keyframes quick-album-equalizer {
+  from { transform: scaleY(.35); }
+  to { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-album-playing > span {
+    animation: none;
+  }
 }
 
 .quick-album-play-control {
@@ -208,7 +266,7 @@
   -webkit-line-clamp: 2;
   line-clamp: 2;
   font-weight: 650;
-  font-size: clamp(10px, calc(6px + 2.5cqi), 14px);
+  font-size: clamp(14px, calc(8px + 2.5cqi), 16px);
   line-height: 1.28;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -223,7 +281,7 @@
 
 .quick-skeleton {
   aspect-ratio: 5;
-  min-height: 32px;
+  min-height: 36px;
   max-height: 64px;
   border-radius: 5px;
   background: #ffffff12;

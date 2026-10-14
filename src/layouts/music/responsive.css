@@ -535,6 +535,8 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;
+  }
+  *:not([role="tooltip"]), *::before, *::after {
     transition: none !important;
   }
   .spin, .spin-icon svg {

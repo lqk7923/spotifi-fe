@@ -242,6 +242,7 @@
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
+  transition: visibility 0s, opacity 0s;
 }
 
 .home-play-tooltip::before {
@@ -256,6 +257,7 @@
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
+  transition-delay: 2s;
 }
 
 .quick-track > span {

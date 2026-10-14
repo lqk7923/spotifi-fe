@@ -35,8 +35,8 @@
   mask-image: linear-gradient(to left, #000, transparent);
 }
 
-.track-scroll-edge.is-at-edge::before {
-  opacity: 0;
+.track-scroll-edge.is-at-edge {
+  visibility: hidden;
 }
 
 .track-scroll-button {

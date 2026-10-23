@@ -5,6 +5,11 @@ Run the existing Vite dev server (`npm run dev`) and open
 needed. This page is not an entry in the default production build. The fixture
 middleware is installed only in the development server.
 
+Real API/R2 mode requires the same `VITE_KEYCLOAK_*` configuration and Keycloak
+login as the app. Allow `/benchmarks/preload.html` in the web client's redirect
+URIs. A first login redirects back to this page; start the run again after login.
+Simulated fixture mode remains independent of Keycloak.
+
 ## What it measures
 
 The runner uses the application's `AudioPreloader` and a muted HTML audio element.

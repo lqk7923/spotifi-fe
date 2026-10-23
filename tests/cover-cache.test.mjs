@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
-import { afterEach, mock, test } from 'node:test'
+import { beforeEach, afterEach, mock, test } from 'node:test'
 import { coverCacheKey, coverUrl, createCoverCache } from '../src/services/cover-cache.js'
+import { auth } from '../src/services/keycloak.js'
 
 afterEach(() => mock.restoreAll())
+beforeEach(context => context.mock.method(auth, 'getAccessToken', async () => 'test-access-token'))
 const item = { trackId: 'track', albumId: 'album', coverPresignedUrl: 'https://r2.example/album/cover.png?X-Amz-Signature=old&X-Amz-Date=20261005T000000Z' }
 const imageResponse = () => new Response(new Blob(['image bytes'], { type: 'image/png' }))
 

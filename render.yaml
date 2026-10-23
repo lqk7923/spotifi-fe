@@ -7,6 +7,15 @@ services:
     runtime: static
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
+    envVars:
+      - key: VITE_KEYCLOAK_URL
+        sync: false
+      - key: VITE_KEYCLOAK_REALM
+        sync: false
+      - key: VITE_KEYCLOAK_WEB_CLIENT_ID
+        sync: false
+      - key: VITE_API_BASE_URL
+        sync: false
     routes:
       - type: rewrite
         source: /*

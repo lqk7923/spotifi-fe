@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
-import { afterEach, mock, test } from 'node:test'
+import { beforeEach, afterEach, mock, test } from 'node:test'
+import { auth } from '../src/services/keycloak.js'
 import { AudioPreloader, fetchPrefix, PRELOAD_BYTES } from '../src/features/player/lib/audio-preload.js'
-import { createAudioResponse, parseRange } from '../public/audio-preload-worker.js'
+import { createAudioResponse, parseRange, requestAudioSignature } from '../public/audio-preload-worker.js'
 
 afterEach(() => mock.restoreAll())
+beforeEach(context => context.mock.method(auth, 'getAccessToken', async () => 'test-access-token'))
 const file = Uint8Array.from({ length: 24 }, (_, index) => index)
 const source = () => ({
   path: '/__audio_preload__/test', prefix: file.slice(0, 8).buffer,
@@ -107,30 +109,31 @@ test('invalid and unsatisfiable ranges return 416', () => {
 })
 
 test('refreshes expired signatures while retaining the cached prefix', async () => {
-  const expired = { ...source(), path: '/expired', signedAt: Date.now() - 120_000 }
+  const expired = { ...source(), path: '/expired', signedAt: Date.now() - 120_000,
+    refreshUrl: async () => { calls.push('page-signing'); return 'https://r2.example/fresh' } }
   const calls = []
   mock.method(globalThis, 'fetch', async (url, options) => {
     calls.push(url)
-    if (url === expired.signingEndpoint) return Response.json({ trackPresignedLink: 'https://r2.example/fresh' })
     assert.equal(options.headers.Range, 'bytes=8-23')
+    assert.equal(options.headers.Authorization, undefined)
     return new Response(file.slice(8), { status: 206, headers: { 'Content-Range': 'bytes 8-23/24' } })
   })
   assert.deepEqual(await bytes(createAudioResponse(request(), expired)), file)
-  assert.deepEqual(calls, [expired.signingEndpoint, 'https://r2.example/fresh'])
+  assert.deepEqual(calls, ['page-signing', 'https://r2.example/fresh'])
 })
 
 test('retries a rejected signature once and keeps the continuation offset', async () => {
-  const current = { ...source(), path: '/rejected' }
+  const current = { ...source(), path: '/rejected',
+    refreshUrl: async () => { calls.push('page-signing'); return 'https://r2.example/retry' } }
   const calls = []
   mock.method(globalThis, 'fetch', async (url, options) => {
     calls.push(url)
-    if (url === current.signingEndpoint) return Response.json({ trackPresignedLink: 'https://r2.example/retry' })
     if (url === current.url) return new Response(null, { status: 403 })
     assert.equal(options.headers.Range, 'bytes=8-23')
     return new Response(file.slice(8), { status: 206, headers: { 'Content-Range': 'bytes 8-23/24' } })
   })
   assert.deepEqual(await bytes(createAudioResponse(request(), current)), file)
-  assert.deepEqual(calls, [current.url, current.signingEndpoint, 'https://r2.example/retry'])
+  assert.deepEqual(calls, [current.url, 'page-signing', 'https://r2.example/retry'])
 })
 
 test('rejects a continuation that ignores Range or returns a different object size', async () => {
@@ -237,11 +240,9 @@ test('selection renews an expired preload URL through the JSON signing API', asy
 test('worker refuses invalid JSON signing payloads before fetching audio', async () => {
   for (const [index, body] of [null, {}, { trackPresignedLink: 123 },
     { trackPresignedLink: 'javascript:alert(1)' }].entries()) {
-    const expired = { ...source(), path: `/invalid-signature-${index}`, signedAt: Date.now() - 120_000 }
-    mock.method(globalThis, 'fetch', async (url) => {
-      assert.equal(url, expired.signingEndpoint)
-      return Response.json(body)
-    })
+    const expired = { ...source(), path: `/invalid-signature-${index}`, signedAt: Date.now() - 120_000,
+      refreshUrl: async () => body?.trackPresignedLink }
+    mock.method(globalThis, 'fetch', () => assert.fail('Invalid media URL must not be fetched'))
     await assert.rejects(bytes(createAudioResponse(request(), expired)), /Invalid audio URL/)
     mock.restoreAll()
   }
@@ -298,7 +299,8 @@ test('cached selection publishes the prefix, preserves track identity and releas
     assert.match(result.url, /^\/__audio_preload__\//)
     assert.equal(messages[0].type, 'store')
     assert.equal(messages[0].audioType, 'audio/wav')
-    assert.equal(messages[0].signingEndpoint, 'https://app.example/track/track/track')
+    assert.equal(messages[0].signingEndpoint, undefined)
+    assert.equal(messages[0].token, undefined)
     assert.equal(preloader.next, null)
     preloader.release()
     assert.deepEqual(messages[1], { type: 'release', path: result.url })
@@ -306,5 +308,81 @@ test('cached selection publishes the prefix, preserves track identity and releas
   } finally {
     if (originalLocation) Object.defineProperty(globalThis, 'location', originalLocation)
     else delete globalThis.location
+  }
+})
+
+test('worker requests URL renewal from the owning page without sending a token or choosing a backend endpoint', async () => {
+  const originalSelf = Object.getOwnPropertyDescriptor(globalThis, 'self')
+  const messages = []
+  Object.defineProperty(globalThis, 'self', { configurable: true, value: {
+    clients: { async get(owner) {
+      assert.equal(owner, 'owning-tab')
+      return { postMessage(message, [port]) {
+        messages.push(message)
+        port.postMessage({ url: 'https://r2.example/renewed?signature=abc' })
+        port.close()
+      } }
+    } },
+  } })
+  try {
+    assert.equal(await requestAudioSignature({ path: '/__audio_preload__/session', owner: 'owning-tab' }),
+      'https://r2.example/renewed?signature=abc')
+    assert.deepEqual(messages, [{ type: 'refresh-audio-url', path: '/__audio_preload__/session' }])
+  } finally {
+    if (originalSelf) Object.defineProperty(globalThis, 'self', originalSelf)
+    else delete globalThis.self
+  }
+})
+
+test('page renews worker playback through authenticated BE and removes renewal access on release', async () => {
+  const originalSecure = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext')
+  const originalWorker = Object.getOwnPropertyDescriptor(navigator, 'serviceWorker')
+  const messages = []
+  const requests = []
+  const listeners = new Map()
+  const worker = { postMessage(message, [port]) {
+    messages.push(message)
+    port.postMessage({ ok: true })
+    port.close()
+  } }
+  Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true })
+  Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: {
+    controller: worker, ready: Promise.resolve(), async register() {},
+    addEventListener: (type, listener) => listeners.set(type, listener),
+  } })
+  mock.method(globalThis, 'fetch', async (url, options) => {
+    requests.push({ url, options })
+    if (url === '/track/track/worker-track') {
+      assert.equal(options.headers.Authorization, 'Bearer test-access-token')
+      return Response.json({ trackPresignedLink: 'https://r2.example/signed' })
+    }
+    assert.equal(url, 'https://r2.example/signed')
+    assert.equal(options.headers.Authorization, undefined)
+    return new Response(file, { status: 206, headers: { 'Content-Range': 'bytes 0-23/24' } })
+  })
+  const preloader = new AudioPreloader()
+  const renew = async path => {
+    const replies = []
+    await listeners.get('message')({ data: { type: 'refresh-audio-url', path },
+      ports: [{ postMessage: reply => replies.push(reply), close() {} }] })
+    return replies[0]
+  }
+  try {
+    preloader.preload({ trackId: 'worker-track' })
+    await preloader.next.ready
+    const playback = await preloader.source({ trackId: 'worker-track' }, new AbortController().signal)
+    assert.equal(playback.cached, true)
+    assert.deepEqual(await renew(playback.url), { url: 'https://r2.example/signed' })
+    assert.equal(requests.length, 3)
+    assert.equal(JSON.stringify(messages).includes('test-access-token'), false)
+    preloader.release()
+    assert.deepEqual(await renew(playback.url), { error: 'Playback session has ended' })
+    assert.equal(requests.length, 3)
+  } finally {
+    preloader.dispose()
+    if (originalSecure) Object.defineProperty(globalThis, 'isSecureContext', originalSecure)
+    else delete globalThis.isSecureContext
+    if (originalWorker) Object.defineProperty(navigator, 'serviceWorker', originalWorker)
+    else delete navigator.serviceWorker
   }
 })

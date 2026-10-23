@@ -1,22 +1,5 @@
 import { isValidAlbum, isValidTrack, trackKey } from '../lib/tracks.js'
-
-// Accept a backend root or the previously documented /track prefix.
-const apiBase = (import.meta.env?.VITE_API_BASE_URL || '').replace(/\/+$/, '').replace(/\/track$/, '')
-
-async function request(path, signal) {
-  const response = await fetch(`${apiBase}${path}`, {
-    cache: 'no-store',
-    signal: signal
-      ? AbortSignal.any([signal, AbortSignal.timeout(15000)])
-      : AbortSignal.timeout(15000),
-  })
-  if (!response.ok) {
-    const error = new Error(`The music server returned an error (${response.status}). Please try again.`)
-    error.status = response.status
-    throw error
-  }
-  return response
-}
+import { apiBase, apiRequest as request } from './api-client.js'
 
 async function getTrackList(path, signal) {
   const response = await request(path, signal)

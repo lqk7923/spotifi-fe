@@ -1,5 +1,6 @@
 import { AudioPreloader, PRELOAD_BYTES } from '../src/features/player/lib/audio-preload.js'
 import { getTracks } from '../src/services/music-api.js'
+import { auth } from '../src/services/keycloak.js'
 import { trackKey, trackLabel } from '../src/lib/tracks.js'
 import { summarize } from './statistics.js'
 
@@ -23,7 +24,6 @@ function fixtureApi(track, settings, mode, warmup, round, signal) {
   })
   const signingEndpointFor = () => `/__benchmark_api/track/${encodeURIComponent(track.trackId)}?${query}`
   return {
-    signingEndpointFor,
     requestPlaybackUrl: async (_track, requestSignal) => {
       const data = await fixtureJson(signingEndpointFor(), requestSignal || signal)
       return data.trackPresignedLink
@@ -204,6 +204,10 @@ element('settings').addEventListener('submit', async (event) => {
     ],
   }
   try {
+    if (settings.source !== 'fixture') {
+      await auth.initialize()
+      if (auth.getSnapshot().status !== 'authenticated') throw new Error('Please log in to run the live benchmark.')
+    }
     const tracks = settings.source === 'fixture'
       ? await fixtureJson('/__benchmark_api/tracks', signal)
       : await getTracks(signal)

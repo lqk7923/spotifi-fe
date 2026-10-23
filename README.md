@@ -1,7 +1,7 @@
 # Spotifi
 
 A React music home page at `/`, based on the supplied Figma home design.
-Built with Vite, Tailwind CSS, daisyUI, and Lucide React. No login is required.
+Built with Vite, Tailwind CSS, daisyUI, and Lucide React. Keycloak login is required.
 Albums have dedicated pages at `/album/{id}`. Click the Spotifi logo to return
 to Home; browser Back/Forward also works. The old `/home` URL redirects to `/`.
 The player remains mounted when navigating between Home and an album.
@@ -18,6 +18,8 @@ Backend repository: [Spotifi backend](https://github.com/lqk7923/Spotifi.git).
 
 ```sh
 npm install
+cp .env.example .env.local
+# Fill in the VITE_KEYCLOAK_* settings in .env.local before starting.
 npm run dev
 ```
 
@@ -27,6 +29,97 @@ Vite forwards `/track` and `/album/{uuid}/tracks` API requests to the backend du
 development and preview. Album page URLs serve the frontend so deep links and reloads work.
 To change the backend address, copy `.env.example` to `.env.local` and set
 `API_PROXY_TARGET`.
+
+## Keycloak authentication
+
+Set these build-time environment variables in `.env.local` and in your hosting
+provider before building production. Restart Vite or rebuild after changes.
+
+```ini
+VITE_KEYCLOAK_URL=https://auth.example.com
+VITE_KEYCLOAK_REALM=your-realm
+VITE_KEYCLOAK_WEB_CLIENT_ID=your-web-client
+VITE_API_BASE_URL=https://api.example.com
+```
+
+`VITE_KEYCLOAK_WEB_CLIENT_ID` identifies the **public web client**, not the API
+audience client (for example, `spotifi-api`). Never put a client secret in the
+frontend. Locally, omit `VITE_API_BASE_URL` to use Vite's existing backend proxy
+and set `API_PROXY_TARGET=http://localhost:8080`. Set `VITE_API_BASE_URL` to the
+public BE root for static hosting. Missing Keycloak settings display a configuration
+error and prevent protected API requests; authentication cannot be bypassed by
+omitting settings.
+
+The app initializes `keycloak-js` with `login-required`, Authorization Code Flow
+and PKCE S256 before mounting the router or loading music. Login and account
+creation are hosted by Keycloak. Enable **Realm settings > Login > User registration**
+so the Keycloak login page exposes its registration link. The signed-out screen
+also has **Log in** and **Create account** actions using the SDK. Passwords are
+never collected by this app. Access and refresh tokens stay in SDK memory and
+are never written to localStorage, sessionStorage, or Cache Storage.
+
+The shared API client calls `updateToken(30)` before every BE request and reads
+the latest access token. It attaches `Authorization: Bearer <access_token>` only
+to BE track/album requests, with cookies omitted. On `401`, it forces refresh
+with `updateToken(-1)` and retries once. A second `401` displays an authentication
+error; `403` displays a permission error without retrying or forcing refresh.
+Refresh failure or remote logout removes the music UI and asks the user to log
+in again. The profile shows the signed-in name and provides **Log out** through
+the SDK; logout unmounts private UI, cancels requests/preloads and stops playback.
+Likes are stored separately for each realm/user; old unscoped browser likes are
+not imported into authenticated accounts.
+
+Configure the web client in Keycloak:
+
+- **Client authentication:** Off (public client); **Standard flow:** On; PKCE: S256.
+- **Valid Redirect URIs:** the actual local and production frontend paths, such
+  as `http://localhost:5173/*` and `https://web.example.com/*`. This includes album
+  deep links; add `127.0.0.1` or other ports only if actually used.
+- **Valid Post Logout Redirect URIs:** the same allowed frontend paths, because
+  the SDK returns to the current page after logout.
+- **Web Origins:** exact origins, such as `http://localhost:5173` and
+  `https://web.example.com`.
+- Add an audience mapper/client scope to the web client's access token so `aud`
+  includes the API client ID, for example `spotifi-api`. Its `iss` must match
+  the BE issuer exactly: `https://auth.example.com/realms/your-realm`. Other
+  audiences can coexist. FE does not enforce business roles such as admin/user.
+
+Supply the actual FE origins to BE, for example:
+
+```ini
+CORS_ALLOWED_ORIGINS=http://localhost:5173,https://web.example.com
+```
+
+BE must permit the `Authorization` header and browser `OPTIONS` preflight.
+FE does not send `credentials: "include"`, call `OPTIONS` manually, or set
+`Access-Control-Allow-*` response headers. The local Vite proxy does not verify
+production BE CORS; test direct cross-origin requests in each environment.
+
+R2 audio/image requests use the presigned URLs as returned by BE, without a JWT.
+The audio Service Worker asks its owning page to renew expired URLs through
+the authenticated API client; no Keycloak tokens are sent to the worker or
+persisted in its cache. Existing R2 range/CORS configuration still applies.
+
+References: [Keycloak JavaScript adapter](https://www.keycloak.org/securing-apps/javascript-adapter),
+[BE JWT validation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html),
+[BE CORS](https://docs.spring.io/spring-security/reference/servlet/integrations/cors.html).
+
+### Authentication verification
+
+Automated tests cover initialization ordering, PKCE settings, fresh token headers,
+refresh failure, one retry after `401`, stopping after another `401`, no retry
+for `403`, SDK login/registration/logout, account-specific likes keys, and media
+requests without JWT. With your deployed Keycloak/BE, also verify:
+
+- Opening `/` or an album while logged out redirects to Keycloak; registration
+  and login return to the selected page and load track/album data.
+- Expiring access tokens refresh, while an expired Keycloak session removes the
+  music UI and shows login actions.
+- Both local and production origins pass BE CORS when calling BE directly.
+- Audio/covers load from R2 with only presigned URLs; seeking after URL expiration
+  renews via an authenticated BE request and continues playback.
+- Logout ends the Keycloak session, stops audio, clears the visible account,
+  queue and search, and keeps likes isolated when signing in as another user.
 
 ## Music API
 
@@ -44,7 +137,7 @@ Dominant colored regions take priority over white/black borders; monochrome cove
 The color is gently darkened to preserve cover brightness and readable white headings, then fades into the existing dark page background.
 Extracted colors are cached by the unsigned cover URL in localStorage (up to 100 entries), so reloads do not require decoding them again.
 Missing, loading, or unreadable covers use a neutral dark gray banner (#242424) fading into black. Banner transitions respect reduced-motion preferences.
-Saved likes using the old bucket/track identity migrate to track IDs.
+Per-account saved likes using the old bucket/track identity migrate to track IDs.
 Missing titles/authors fall back to track IDs/Unknown artist. API durations are converted from
 milliseconds to seconds for display and player controls; loaded audio metadata takes
 precedence. An unavailable backend shows a retry state; an empty database shows an
@@ -220,6 +313,8 @@ node tests/fixture-server.mjs
 In a second terminal, start Vite with `API_PROXY_TARGET=http://127.0.0.1:8081`
 (for PowerShell: `$env:API_PROXY_TARGET='http://127.0.0.1:8081'; npm run dev`).
 The fixture is only for testing and is never used by the default app configuration.
+The main app still requires a configured Keycloak web client and login when using
+this fixture. The standalone benchmark's simulated fixture mode needs no login.
 
 ## Preload benchmark
 

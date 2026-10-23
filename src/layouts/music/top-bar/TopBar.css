@@ -127,3 +127,10 @@
   background: #53515c;
   border-radius: 50%;
 }
+
+.guest-profile > span:nth-child(2) {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

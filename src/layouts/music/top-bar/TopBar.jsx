@@ -1,7 +1,10 @@
-import { Home, Search, UserRound, X } from 'lucide-react'
+import { Home, LogOut, Search, UserRound, X } from 'lucide-react'
+import { useSyncExternalStore } from 'react'
 import AppLink from '../../../app/routing/AppLink.jsx'
+import { auth } from '../../../services/keycloak.js'
 
 export default function TopBar({ search, onSearchChange, searchRef, onHome }) {
+  const { user } = useSyncExternalStore(auth.subscribe, auth.getSnapshot)
   return (
     <header className="topbar">
       <AppLink className="brand" href="/" aria-label="Spotifi home" onClick={onHome}>
@@ -35,7 +38,10 @@ export default function TopBar({ search, onSearchChange, searchRef, onHome }) {
         </label>
       </div>
       <div className="guest-profile">
-        <span><UserRound size={17} /></span><span>Music lover</span>
+        <span aria-hidden="true"><UserRound size={17} /></span><span title={user?.name}>{user?.name}</span>
+        <button type="button" className="icon-button" aria-label="Log out" title="Log out" onClick={() => void auth.logout()}>
+          <LogOut size={18} aria-hidden="true" />
+        </button>
       </div>
     </header>
   )

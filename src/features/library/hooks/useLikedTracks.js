@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { migrateLikes, trackKey } from '../../../lib/tracks.js'
+import { auth } from '../../../services/keycloak.js'
 
-const LIKES_STORAGE_KEY = 'music-likes'
-
-function readLikes() {
+function readLikes(storageKey) {
   try {
-    const saved = JSON.parse(localStorage.getItem(LIKES_STORAGE_KEY) || '[]')
+    const saved = JSON.parse(localStorage.getItem(storageKey) || '[]')
     return migrateLikes(saved)
   } catch {
     return []
@@ -13,15 +12,16 @@ function readLikes() {
 }
 
 export default function useLikedTracks() {
-  const [likes, setLikes] = useState(readLikes)
+  const storageKey = auth.getSnapshot().user.storageKey
+  const [likes, setLikes] = useState(() => readLikes(storageKey))
 
   useEffect(() => {
     try {
-      localStorage.setItem(LIKES_STORAGE_KEY, JSON.stringify(likes))
+      localStorage.setItem(storageKey, JSON.stringify(likes))
     } catch {
       // Likes remain usable when browser storage is unavailable.
     }
-  }, [likes])
+  }, [likes, storageKey])
 
   const toggleLike = track => {
     const key = trackKey(track)

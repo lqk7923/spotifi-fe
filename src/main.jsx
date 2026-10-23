@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/globals.css'
 import App from './app/App.jsx'
+import AuthGate from './features/auth/AuthGate.jsx'
 
 if (['/home', '/home/'].includes(window.location.pathname)) {
   window.history.replaceState(null, '', `/${window.location.search}${window.location.hash}`)
@@ -9,6 +10,6 @@ if (['/home', '/home/'].includes(window.location.pathname)) {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <AuthGate><App /></AuthGate>
   </StrictMode>,
 )

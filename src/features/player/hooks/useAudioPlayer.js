@@ -44,13 +44,17 @@ export default function useAudioPlayer(tracks, audioRef) {
   }, [tracks, currentTrack, shuffle, shuffleSeed])
 
   useEffect(() => {
+    const audio = audioRef.current
     preloadRef.current = new AudioPreloader({ enabled: preloadEnabled })
     return () => {
       sequenceRef.current += 1
       requestRef.current?.abort()
       preloadRef.current.dispose()
+      audio?.pause()
+      audio?.removeAttribute('src')
+      audio?.load()
     }
-  }, [])
+  }, [audioRef])
 
   useEffect(() => {
     // Let the current track start before competing for network bandwidth.

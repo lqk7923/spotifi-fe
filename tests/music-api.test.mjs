@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
-import { afterEach, test, mock } from 'node:test'
+import { beforeEach, afterEach, test, mock } from 'node:test'
+import { auth } from '../src/services/keycloak.js'
 import { getAlbumTracks, getPlaybackUrl, getSigningEndpoint, getTrackLinks, getTracks } from '../src/services/music-api.js'
 import { getAlbumQueue, trackAuthor, trackDurationSeconds, trackLabel } from '../src/lib/tracks.js'
 import { albumPath, resolveRoute } from '../src/app/routing/navigation.js'
 
 afterEach(() => mock.restoreAll())
+beforeEach(context => context.mock.method(auth, 'getAccessToken', async () => 'test-access-token'))
 const track = {
   trackId: '550e8400-e29b-41d4-a716-446655440000',
   coverPresignedUrl: 'https://r2.example/cover.jpg?X-Amz-Signature=abc',

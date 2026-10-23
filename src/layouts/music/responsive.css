@@ -72,7 +72,7 @@
     height: 28px;
   }
 
-  .brand > span, .guest-profile > span:last-child {
+  .brand > span, .guest-profile > span:nth-child(2) {
     display: none;
   }
 

@@ -6,11 +6,12 @@ function luminance(rgb) {
   return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722
 }
 
-function darkenForBanner(rgb) {
-  // Preserve more cover brightness while keeping white banner text legible.
+function colorForBanner(rgb) {
+  // Lift darker covers slightly, with at least 5.5:1 contrast against white.
+  const brighter = rgb.map(value => Math.min(255, value * 1.15))
   let scale = 1
-  while (luminance(rgb.map(value => value * scale)) > 0.1) scale *= 0.95
-  return `#${rgb.map(value => Math.floor(value * scale).toString(16).padStart(2, '0')).join('')}`
+  while (luminance(brighter.map(value => value * scale)) > 0.14) scale *= 0.95
+  return `#${brighter.map(value => Math.floor(value * scale).toString(16).padStart(2, '0')).join('')}`
 }
 
 export function bannerColorFromPixels(pixels) {
@@ -46,10 +47,10 @@ export function bannerColorFromPixels(pixels) {
   if (!opaqueCount) return null
   // A tiny colored mark should not tint an otherwise monochrome cover.
   if (colorfulCount < opaqueCount * 0.08 || !buckets.size) {
-    return darkenForBanner(total.map(value => value / opaqueCount))
+    return colorForBanner(total.map(value => value / opaqueCount))
   }
   const dominant = [...buckets.values()].reduce((best, bucket) => bucket.score > best.score ? bucket : best)
-  return darkenForBanner(dominant.sum.map(value => value / dominant.count))
+  return colorForBanner(dominant.sum.map(value => value / dominant.count))
 }
 
 export async function extractBannerColor(blob) {

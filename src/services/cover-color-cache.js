@@ -1,7 +1,7 @@
 import { extractBannerColor } from '../lib/cover-colors.js'
 import { coverCache, coverCacheKey, coverUrl } from './cover-cache.js'
 
-const STORAGE_KEY = 'music-cover-colors-v2'
+const STORAGE_KEY = 'music-cover-colors-v4'
 const MAX_COLORS = 100
 const validColor = color => typeof color === 'string' && /^#[\da-f]{6}$/i.test(color)
 

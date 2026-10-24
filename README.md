@@ -157,7 +157,8 @@ Uncached covers rejected with 401/403 request a fresh URL and retry once. R2 mus
 Use a new object path or version query when replacing a cover so browsers can distinguish it from an existing cached image.
 Album banners and Home album hover colors are extracted from a 32×32 sample of the cached cover's centered square crop.
 Dominant colored regions take priority over white/black borders; monochrome covers retain a neutral tint.
-The color is gently darkened to preserve cover brightness and readable white headings, then fades into the existing dark page background.
+The color keeps more cover brightness while maintaining at least 5.5:1 contrast
+against white headings, then fades into the existing dark page background.
 Extracted colors are cached by the unsigned cover URL in localStorage (up to 100 entries), so reloads do not require decoding them again.
 Missing, loading, or unreadable covers use a neutral dark gray banner (#242424) fading into black. Banner transitions respect reduced-motion preferences.
 Per-account saved likes using the old bucket/track identity migrate to track IDs.

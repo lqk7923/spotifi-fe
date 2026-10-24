@@ -35,15 +35,18 @@ test('monochrome images stay neutral, even with a tiny saturated accent', () => 
   assert.equal(bannerColorFromPixels(pixels([10, [255, 255, 255, 0]])), null)
 })
 
-test('bright covers keep a lighter banner while retaining contrast with white headings', () => {
+test('cover colors brighten gently while retaining contrast with white headings', () => {
   const luminance = rgb => rgb.map(value => value / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
     .reduce((total, value, index) => total + value * [0.2126, 0.7152, 0.0722][index], 0)
-  for (const rgb of [[255, 255, 255], [255, 255, 0], [0, 255, 0], [255, 0, 0], [0, 0, 255], [200, 100, 40]]) {
+  for (const rgb of [[255, 255, 255], [255, 255, 0], [0, 255, 0], [255, 0, 0], [0, 0, 255], [200, 100, 40], [40, 60, 80]]) {
     const background = channels(bannerColorFromPixels(pixels([100, [...rgb, 255]])))
     const brightness = luminance(background)
     const contrast = 1.05 / (brightness + 0.05)
-    assert.ok(contrast >= 7, `${rgb} produced contrast ${contrast}`)
-    if (luminance(rgb) > 0.1) assert.ok(brightness > 0.08, `${rgb} was darkened too much`)
+    assert.ok(contrast >= 5.5, `${rgb} produced contrast ${contrast}`)
+    if (luminance(rgb) > 0.14) assert.ok(brightness > 0.12, `${rgb} was darkened too much`)
+    if (luminance(rgb) < 0.08 && Math.max(...rgb) < 255) {
+      assert.ok(brightness > luminance(rgb), `${rgb} was not brightened`)
+    }
   }
 })
 

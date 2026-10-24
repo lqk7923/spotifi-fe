@@ -62,7 +62,7 @@ away from Home. Silent-check fallback redirects are disabled; browsers that bloc
 third-party cookies let the visitor sign in explicitly instead. Login and account
 creation are hosted by Keycloak. Enable **Realm settings > Login > User registration**
 so the Keycloak login page exposes its registration link. Guests see **Sign up**
-and a white **Log in** button at the top left. Selecting a track opens a sign-in
+and a white **Log in** button at the top right. Selecting a track opens a sign-in
 dialog with its artwork; no audio element or preloader is mounted for guests.
 The Spotify loading screen appears during an explicit login/register redirect.
 Passwords are

@@ -38,6 +38,10 @@
   background: #b3b3b3;
 }
 
+.sidebar-resizer:focus-visible::after {
+  background: #fff;
+}
+
 .sidebar-expanded-content {
   width: 100%;
   height: 100%;

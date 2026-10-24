@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { Music2 } from 'lucide-react'
 import { auth } from '../../services/keycloak.js'
+import AuthLoading from './AuthLoading.jsx'
 import './AuthGate.css'
 
 export default function AuthGate({ children }) {
@@ -8,12 +9,13 @@ export default function AuthGate({ children }) {
   useEffect(() => { void auth.initialize() }, [])
 
   if (status === 'authenticated') return <div className="auth-content" key={user.id}>{children}</div>
+  if (status === 'loading') return <AuthLoading />
 
   return (
     <main className="auth-screen">
       <div className="auth-card">
         <Music2 size={42} aria-hidden="true" />
-        <h1>{status === 'loading' ? 'Signing in to Spotifi…' : 'Welcome to Spotifi'}</h1>
+        <h1>Welcome to Spotifi</h1>
         <p role={error ? 'alert' : 'status'}>{error || 'Connecting to your account…'}</p>
         {status === 'error' ? (
           <button className="btn auth-primary" onClick={() => window.location.reload()}>Try again</button>

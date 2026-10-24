@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Spotifi — Signing in preview</title>
+  <link rel="icon" href="/favicon.svg">
+  <meta name="theme-color" content="#121212">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    import React from 'react'
+    import { createRoot } from 'react-dom/client'
+    import AuthLoading from '/src/features/auth/AuthLoading.jsx'
+
+    createRoot(document.getElementById('root')).render(React.createElement(AuthLoading))
+  </script>
+</body>
+</html>

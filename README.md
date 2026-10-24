@@ -85,6 +85,8 @@ error; `403` displays a permission error without retrying or forcing refresh.
 Refresh failure or remote logout stops playback and returns to guest browsing.
 The profile shows the signed-in name and provides **Log out** through
 the SDK; logout unmounts private UI, cancels requests/preloads and stops playback.
+After Keycloak ends the session, it returns to the FE `/login` entry, which opens
+the Keycloak login page. Signing in from that entry returns to Home.
 Guests never read or write saved likes. Likes are stored separately for each realm/user; old unscoped browser likes are
 not imported into authenticated accounts.
 
@@ -94,8 +96,9 @@ Configure the web client in Keycloak:
 - **Valid Redirect URIs:** the actual local and production frontend paths, such
   as `http://localhost:5173/*` and `https://web.example.com/*`. This includes album
   deep links and `/silent-check-sso.html`; add `127.0.0.1` or other ports only if actually used.
-- **Valid Post Logout Redirect URIs:** the same allowed frontend paths, because
-  the SDK returns to the current page after logout.
+- **Valid Post Logout Redirect URIs:** allow the FE `/login` entry, such as
+  `http://localhost:5173/login` and `https://web.example.com/login` (the existing
+  `http://localhost:5173/*` and `https://web.example.com/*` patterns also cover it).
 - **Web Origins:** exact origins, such as `http://localhost:5173` and
   `https://web.example.com`.
 - Add an audience mapper/client scope to the web client's access token so `aud`
@@ -142,7 +145,8 @@ requests without JWT. With your deployed Keycloak/BE, also verify:
 - Audio/covers load from R2 with only presigned URLs; seeking after URL expiration
   renews via an authenticated BE request and continues playback.
 - Logout ends the Keycloak session, stops audio, clears the visible account,
-  queue and search, and keeps likes isolated when signing in as another user.
+  queue and search, and opens the Keycloak login page via the FE `/login` entry.
+  Signing in again returns to Home and keeps likes isolated between accounts.
 
 ## Music API
 

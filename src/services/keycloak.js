@@ -15,8 +15,17 @@ export function keycloakConfig(env = {}) {
   return values
 }
 
+const basePath = import.meta.env?.BASE_URL || '/'
+const loginPath = `${basePath}login`
+
 export const auth = createAuthSession(
   () => new Keycloak(keycloakConfig(import.meta.env)),
-  () => `${window.location.origin}${window.location.pathname}${window.location.search}`,
-  () => new URL(`${import.meta.env.BASE_URL}silent-check-sso.html`, window.location.origin).href,
+  () => window.location.pathname === loginPath
+    ? new URL(basePath, window.location.origin).href
+    : `${window.location.origin}${window.location.pathname}${window.location.search}`,
+  () => new URL(`${basePath}silent-check-sso.html`, window.location.origin).href,
+  {
+    logoutRedirectUri: () => new URL(loginPath, window.location.origin).href,
+    loginOnLoad: () => typeof window !== 'undefined' && window.location.pathname === loginPath,
+  },
 )

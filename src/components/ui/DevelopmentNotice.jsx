@@ -3,12 +3,15 @@ import { Construction, X } from 'lucide-react'
 import './DevelopmentNotice.css'
 
 const completedUpdates = [
-  'Trang chủ, thư viện nhạc và trang chi tiết album.',
-  'Tìm kiếm bài hát theo tên, nghệ sĩ hoặc album.',
-  'Phát / tạm dừng, chuyển bài, tua nhạc và chỉnh âm lượng.',
-  'Phát ngẫu nhiên, lặp lại và xem danh sách phát.',
-  'Lưu bài hát yêu thích trên trình duyệt.',
-  'Giao diện cho máy tính và điện thoại; thu gọn, kéo chỉnh sidebar.',
+  'Trang chủ, thư viện nhạc và chi tiết album.',
+  'Tìm kiếm bài hát, nghệ sĩ và album.',
+  'Phát nhạc và điều khiển trình phát.',
+]
+
+const latestUpdates = [
+  'Đăng nhập và đăng ký tài khoản Spotifi.',
+  'Duyệt nhạc khi chưa đăng nhập; đăng nhập để nghe.',
+  'Đăng xuất về trang đăng nhập; đăng nhập lại về trang chủ.',
 ]
 
 export default function DevelopmentNotice() {
@@ -45,7 +48,16 @@ export default function DevelopmentNotice() {
             {completedUpdates.map(update => <li key={update}>{update}</li>)}
           </ul>
         </section>
-        <button type="submit" className="development-notice-confirm" autoFocus>Đã hiểu</button>
+        <section className="development-notice-updates" aria-labelledby="development-notice-latest-updates-title">
+          <div className="development-notice-updates-heading">
+            <h3 id="development-notice-latest-updates-title">Đã cập nhật</h3>
+            <time dateTime="2026-10-24">24/10/2026</time>
+          </div>
+          <ul>
+            {latestUpdates.map(update => <li key={update}>{update}</li>)}
+          </ul>
+        </section>
+        <button type="submit" className="development-notice-confirm" autoFocus>Okeee</button>
       </form>
     </dialog>
   )

@@ -4,7 +4,7 @@ import { createAuthSession } from '../src/services/auth-session.js'
 import { createApiClient } from '../src/services/api-client.js'
 import { keycloakConfig } from '../src/services/keycloak.js'
 
-function setup(overrides = {}) {
+function setup(overrides = {}, navigation = {}) {
   const events = []
   const adapter = {
     authenticated: true, token: 'access-token',
@@ -23,7 +23,7 @@ function setup(overrides = {}) {
     async logout(options) { events.push(['logout', options, adapter.idToken]) },
     ...overrides,
   }
-  const session = createAuthSession(() => adapter, () => 'https://web.example/album/id')
+  const session = createAuthSession(() => adapter, () => 'https://web.example/album/id', undefined, navigation)
   return { session, adapter, events }
 }
 
@@ -188,6 +188,42 @@ test('remote logout notifies subscribers and removes user information', async ()
   assert.equal(updates, 2)
   assert.equal(session.getSnapshot().user, null)
   unsubscribe()
+})
+
+test('explicit logout ends the Keycloak session before returning to the login entry', async () => {
+  const { session, events } = setup({}, { logoutRedirectUri: () => 'https://web.example/login' })
+  await session.initialize()
+  await session.logout()
+  assert.deepEqual(events.slice(-2), [
+    ['logout', { redirectUri: 'https://web.example/login' }, 'never-send-id-token'],
+    ['clear'],
+  ])
+  assert.equal(events.some(event => event[0] === 'login'), false)
+})
+
+test('login entry opens Keycloak and keeps the loading screen until authentication finishes', async () => {
+  let finishInit
+  const gate = new Promise(resolve => { finishInit = resolve })
+  const { session, adapter, events } = setup({ async init(options) {
+    events.push(['init', options])
+    adapter.loginRequired = options.onLoad === 'login-required'
+    await gate
+    return true
+  } }, { loginOnLoad: () => true })
+  assert.equal(session.getSnapshot().status, 'redirecting')
+  const pending = session.initialize()
+  assert.equal(session.getSnapshot().status, 'redirecting')
+  assert.equal(session.getSnapshot().user, null)
+  assert.equal(events[0][1].onLoad, 'login-required')
+  assert.equal(events[0][1].pkceMethod, 'S256')
+  assert.equal(events[0][1].redirectUri, 'https://web.example/album/id')
+  finishInit()
+  await pending
+  assert.equal(session.getSnapshot().status, 'authenticated')
+  adapter.onAuthLogout()
+  assert.equal(session.getSnapshot().status, 'signed-out')
+  assert.equal(adapter.loginRequired, false)
+  assert.equal(events.some(event => event[0] === 'login'), false)
 })
 
 test('failed SDK logout clears tokens and offers retry without automatically logging in again', async () => {

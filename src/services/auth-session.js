@@ -1,8 +1,9 @@
 export function createAuthSession(createAdapter, redirectUri,
-  silentCheckSsoUri = () => new URL('/silent-check-sso.html', redirectUri()).href) {
+  silentCheckSsoUri = () => new URL('/silent-check-sso.html', redirectUri()).href,
+  { logoutRedirectUri = redirectUri, loginOnLoad = () => false } = {}) {
   let adapter
   let initialization
-  let snapshot = { status: 'loading', user: null, error: '' }
+  let snapshot = { status: loginOnLoad() ? 'redirecting' : 'loading', user: null, error: '' }
   const listeners = new Set()
   const publish = (next) => {
     snapshot = next
@@ -28,11 +29,14 @@ export function createAuthSession(createAdapter, redirectUri,
             if (snapshot.status === 'authenticated') signedOut()
           }
           adapter.onTokenExpired = () => { void session.getAccessToken().catch(() => {}) }
+          const requireLogin = loginOnLoad()
+          if (requireLogin) publish({ status: 'redirecting', user: null, error: '' })
           const authenticated = await adapter.init({
-            onLoad: 'check-sso', flow: 'standard', pkceMethod: 'S256',
+            onLoad: requireLogin ? 'login-required' : 'check-sso', flow: 'standard', pkceMethod: 'S256',
+            ...(requireLogin ? { redirectUri: redirectUri() } : {}),
             silentCheckSsoRedirectUri: silentCheckSsoUri(), silentCheckSsoFallback: false,
           })
-          // Guests browse without redirecting; explicit login opens Keycloak.
+          // Session expiry returns to guest browsing, including after a /login entry.
           adapter.loginRequired = false
           if (!authenticated || !adapter.token) {
             signedOut('')
@@ -88,7 +92,7 @@ export function createAuthSession(createAdapter, redirectUri,
       // Remove private UI immediately; retain the SDK's ID token until it builds the logout URL.
       signedOut('You have been logged out.')
       try {
-        await adapter?.logout({ redirectUri: redirectUri() })
+        await adapter?.logout({ redirectUri: logoutRedirectUri() })
       } catch {
         signedOut('Signed out locally. Could not end the Keycloak session. Please retry logging out.', true)
       } finally {

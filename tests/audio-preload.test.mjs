@@ -10,7 +10,7 @@ const file = Uint8Array.from({ length: 24 }, (_, index) => index)
 const source = () => ({
   path: '/__audio_preload__/test', prefix: file.slice(0, 8).buffer,
   total: file.length, type: 'audio/wav', url: 'https://r2.example/old',
-  signedAt: Date.now(), signingEndpoint: 'https://app.example/track/track/track',
+  signedAt: Date.now(), signingEndpoint: 'https://app.example/track/track',
 })
 const request = (range) => new Request('https://app.example/__audio_preload__/test', {
   headers: range ? { Range: range } : {},
@@ -228,7 +228,7 @@ test('selection renews an expired preload URL through the JSON signing API', asy
     url: 'https://r2.example/expired', signedAt: Date.now() - 120_000,
   }
   mock.method(globalThis, 'fetch', async (url) => {
-    assert.equal(url, '/track/track/track')
+    assert.equal(url, '/track/track')
     return Response.json({ trackPresignedLink: 'https://r2.example/renewed' })
   })
   const result = await preloader.source({ trackId: 'track' }, new AbortController().signal)
@@ -352,7 +352,7 @@ test('page renews worker playback through authenticated BE and removes renewal a
   } })
   mock.method(globalThis, 'fetch', async (url, options) => {
     requests.push({ url, options })
-    if (url === '/track/track/worker-track') {
+    if (url === '/track/worker-track') {
       assert.equal(options.headers.Authorization, 'Bearer test-access-token')
       return Response.json({ trackPresignedLink: 'https://r2.example/signed' })
     }

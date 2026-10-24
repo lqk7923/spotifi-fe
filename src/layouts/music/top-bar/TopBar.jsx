@@ -6,7 +6,13 @@ import { auth } from '../../../services/keycloak.js'
 export default function TopBar({ search, onSearchChange, searchRef, onHome }) {
   const { user } = useSyncExternalStore(auth.subscribe, auth.getSnapshot)
   return (
-    <header className="topbar">
+    <header className={`topbar${user ? '' : ' topbar-guest'}`}>
+      {!user && (
+        <div className="guest-auth-actions" aria-label="Account">
+          <button type="button" className="guest-signup" onClick={() => void auth.register()}>Sign up</button>
+          <button type="button" className="guest-login" onClick={() => void auth.login()}>Log in</button>
+        </div>
+      )}
       <AppLink className="brand" href="/" aria-label="Spotifi home" onClick={onHome}>
         <svg width="34" height="34" viewBox="0 0 40 40" fill="none" aria-hidden="true">
           <circle cx="20" cy="20" r="20" fill="currentColor" />
@@ -37,12 +43,12 @@ export default function TopBar({ search, onSearchChange, searchRef, onHome }) {
           )}
         </label>
       </div>
-      <div className="guest-profile">
+      {user && <div className="guest-profile">
         <span aria-hidden="true"><UserRound size={17} /></span><span title={user?.name}>{user?.name}</span>
         <button type="button" className="icon-button" aria-label="Log out" title="Log out" onClick={() => void auth.logout()}>
           <LogOut size={18} aria-hidden="true" />
         </button>
-      </div>
+      </div>}
     </header>
   )
 }

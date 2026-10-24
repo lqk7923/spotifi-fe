@@ -38,3 +38,31 @@ export function createApiClient({ session = auth, baseUrl = apiBase, fetcher = (
 }
 
 export const apiRequest = createApiClient()
+
+// Only catalog metadata is public. Audio signing must use apiRequest above.
+export function createCatalogClient({ session = auth, baseUrl = apiBase, fetcher = (...args) => fetch(...args) } = {}) {
+  const authenticatedRequest = createApiClient({ session, baseUrl, fetcher })
+  return async function requestCatalog(path, signal) {
+    if (path !== '/track/all' && !/^\/album\/[^/]+\/tracks$/.test(path)) {
+      throw new Error('Expected a public catalog metadata path.')
+    }
+    if (session.getSnapshot().status === 'authenticated') return authenticatedRequest(path, signal)
+    const requestSignal = signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(15000)])
+      : AbortSignal.timeout(15000)
+    requestSignal.throwIfAborted()
+    const response = await fetcher(`${baseUrl}${path}`, {
+      cache: 'no-store', credentials: 'omit', signal: requestSignal,
+    })
+    if (!response.ok) {
+      const error = new Error([401, 403].includes(response.status)
+        ? 'The music server has not enabled public catalog access yet.'
+        : `The music server returned an error (${response.status}). Please try again.`)
+      error.status = response.status
+      throw error
+    }
+    return response
+  }
+}
+
+export const catalogRequest = createCatalogClient()

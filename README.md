@@ -1,7 +1,8 @@
 # Spotifi
 
 A React music home page at `/`, based on the supplied Figma home design.
-Built with Vite, Tailwind CSS, daisyUI, and Lucide React. Keycloak login is required.
+Built with Vite, Tailwind CSS, daisyUI, and Lucide React. Visitors can browse the
+catalog and artwork; Keycloak login is required to listen or save likes.
 Albums have dedicated pages at `/album/{id}`. Click the Spotifi logo to return
 to Home; browser Back/Forward also works. The old `/home` URL redirects to `/`.
 The player remains mounted when navigating between Home and an album.
@@ -54,23 +55,37 @@ public BE root for static hosting. Missing Keycloak settings display a configura
 error and prevent protected API requests; authentication cannot be bypassed by
 omitting settings.
 
-The app initializes `keycloak-js` with `login-required`, Authorization Code Flow
-and PKCE S256 before mounting the router or loading music. Login and account
+The app renders Home immediately and initializes `keycloak-js` with `check-sso`,
+Authorization Code Flow and PKCE S256 in the background. The public
+`silent-check-sso.html` callback checks an existing session without navigating
+away from Home. Silent-check fallback redirects are disabled; browsers that block
+third-party cookies let the visitor sign in explicitly instead. Login and account
 creation are hosted by Keycloak. Enable **Realm settings > Login > User registration**
-so the Keycloak login page exposes its registration link. The signed-out screen
-also has **Log in** and **Create account** actions using the SDK. Passwords are
+so the Keycloak login page exposes its registration link. Guests see **Sign up**
+and a white **Log in** button at the top left. Selecting a track opens a sign-in
+dialog with its artwork; no audio element or preloader is mounted for guests.
+The Spotify loading screen appears during an explicit login/register redirect.
+Passwords are
 never collected by this app. Access and refresh tokens stay in SDK memory and
 are never written to localStorage, sessionStorage, or Cache Storage.
 
-The shared API client calls `updateToken(30)` before every BE request and reads
+Guest catalog requests use `GET /track/all` and
+`GET /album/{albumId}/tracks`, without a Bearer header or cookies. BE must allow
+anonymous reads on these metadata routes and return artwork URLs without audio
+links. Cover renewal also uses album metadata, never the audio-signing endpoint.
+`GET /track/{trackId}` must remain protected by Keycloak access tokens.
+Public catalog 401/403 errors report the missing BE public-access configuration
+without refreshing tokens or redirecting the visitor.
+
+The authenticated API client calls `updateToken(30)` before each protected BE request and reads
 the latest access token. It attaches `Authorization: Bearer <access_token>` only
 to BE track/album requests, with cookies omitted. On `401`, it forces refresh
 with `updateToken(-1)` and retries once. A second `401` displays an authentication
 error; `403` displays a permission error without retrying or forcing refresh.
-Refresh failure or remote logout removes the music UI and asks the user to log
-in again. The profile shows the signed-in name and provides **Log out** through
+Refresh failure or remote logout stops playback and returns to guest browsing.
+The profile shows the signed-in name and provides **Log out** through
 the SDK; logout unmounts private UI, cancels requests/preloads and stops playback.
-Likes are stored separately for each realm/user; old unscoped browser likes are
+Guests never read or write saved likes. Likes are stored separately for each realm/user; old unscoped browser likes are
 not imported into authenticated accounts.
 
 Configure the web client in Keycloak:
@@ -78,7 +93,7 @@ Configure the web client in Keycloak:
 - **Client authentication:** Off (public client); **Standard flow:** On; PKCE: S256.
 - **Valid Redirect URIs:** the actual local and production frontend paths, such
   as `http://localhost:5173/*` and `https://web.example.com/*`. This includes album
-  deep links; add `127.0.0.1` or other ports only if actually used.
+  deep links and `/silent-check-sso.html`; add `127.0.0.1` or other ports only if actually used.
 - **Valid Post Logout Redirect URIs:** the same allowed frontend paths, because
   the SDK returns to the current page after logout.
 - **Web Origins:** exact origins, such as `http://localhost:5173` and
@@ -115,10 +130,14 @@ refresh failure, one retry after `401`, stopping after another `401`, no retry
 for `403`, SDK login/registration/logout, account-specific likes keys, and media
 requests without JWT. With your deployed Keycloak/BE, also verify:
 
-- Opening `/` or an album while logged out redirects to Keycloak; registration
-  and login return to the selected page and load track/album data.
-- Expiring access tokens refresh, while an expired Keycloak session removes the
-  music UI and shows login actions.
+- Opening `/` or an album while logged out shows the catalog/artwork without
+  redirecting to Keycloak. No audio signing, range downloads, or preload-worker
+  registration occurs until authenticated.
+- Selecting a track or Play all as a guest opens the artwork/sign-in dialog.
+  Escape, its close button, and clicking the backdrop dismiss it. Login and
+  registration preserve the current page.
+- Expiring access tokens refresh, while an expired Keycloak session stops audio,
+  cancels preloads, and returns to guest browsing.
 - Both local and production origins pass BE CORS when calling BE directly.
 - Audio/covers load from R2 with only presigned URLs; seeking after URL expiration
   renews via an authenticated BE request and continues playback.
@@ -127,9 +146,9 @@ requests without JWT. With your deployed Keycloak/BE, also verify:
 
 ## Music API
 
-- `GET /track/all`: direct JSON array of `{ trackId, trackTitle, trackDuration, author, albumId, albumTitle, coverPresignedUrl }`. `trackDuration` is milliseconds (for example, `12000` means 12 seconds). `author` is the album author; only tracks with a matching album are returned.
+- `GET /track/all` (public): direct JSON array of `{ trackId, trackTitle, trackDuration, author, albumId, albumTitle, coverPresignedUrl }`. `trackDuration` is milliseconds (for example, `12000` means 12 seconds). `author` is the album author; only tracks with a matching album are returned.
 - `GET /album/{albumId}/tracks`: JSON album object `{ albumId, albumTitle, author, albumCoverPresignedUrl, releaseDate, albumTracks }`. Each item in `albumTracks` contains `{ trackId, trackTitle, trackDuration }`. Tracks inherit album metadata and its cover for playback and the queue. The release date shows the year with an English `Month dd yyyy` tooltip. HTTP 404 displays "Could not find that album"; network and server failures retain the retry state.
-- `GET /track/track/{trackId}`: JSON `{ "trackPresignedLink": "https://...", "coverPresignedLink": "https://..." }`, valid for two minutes. The track ID is URL-encoded; the bucket is configured on the server.
+- `GET /track/{trackId}` (authenticated): JSON `{ "trackPresignedLink": "https://...", "coverPresignedLink": "https://..." }`, valid for two minutes. The track ID is URL-encoded; the bucket is configured on the server.
 
 The page uses API titles, authors, durations, and cover images. Covers show a subtle pulsing skeleton until the image has loaded and decoded; missing or failed images leave a plain dark tile. Reduced-motion preferences disable the pulse.
 Cover image bytes are cached in browser Cache Storage (up to 100 images), with a bounded memory fallback.
@@ -161,7 +180,8 @@ the end of the collection unless shuffle or repeat is enabled.
 
 ## Next-track preload
 
-Preload is enabled by default. To disable it in the app for testing, set
+Preload is enabled by default for authenticated sessions, and is never started
+for guests. To disable it in the app for testing, set
 `VITE_AUDIO_PRELOAD_ENABLED=false` in `.env.local` (or `.env`). Set it to `true`
 or remove the variable to enable it again. Restart the Vite dev server after
 changing the value; production builds must be rebuilt with the new value.

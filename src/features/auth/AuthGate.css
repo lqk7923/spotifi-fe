@@ -2,58 +2,32 @@
   display: contents;
 }
 
-.auth-screen {
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: radial-gradient(ellipse at top, #163a24, #121212 65%);
+.auth-feedback {
+  position: fixed;
+  z-index: 100;
+  bottom: 24px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: min(560px, calc(100% - 32px));
+  padding: 16px 20px;
+  border: 1px solid #ffffff25;
+  border-radius: 12px;
+  background: #242424;
+  box-shadow: 0 8px 24px #0006;
+  transform: translateX(-50%);
 }
 
-.auth-card {
-  width: min(100%, 480px);
-  padding: 36px 24px;
-  border-radius: 16px;
-  background: #171717;
-  text-align: center;
-}
-
-.auth-card > svg {
-  color: #1ed760;
-  margin-inline: auto;
-}
-
-.auth-card h1 {
-  margin-block: 24px 16px;
-  font-size: 30px;
-}
-
-.auth-card p {
-  color: #b3b3b3;
+.auth-feedback p {
+  margin: 0;
   overflow-wrap: anywhere;
 }
 
-.auth-actions {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.auth-card .btn {
-  margin-top: 24px;
-  border-radius: 24px;
-  padding-inline: 24px;
-}
-
-.auth-primary {
-  background: #1ed760;
-  border-color: #1ed760;
-  color: #000;
-}
-
-.auth-secondary {
-  background: transparent;
-  color: #fff;
-  border-color: #777;
+.auth-feedback button {
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  color: #1ed760;
+  font-weight: 700;
 }

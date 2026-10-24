@@ -130,7 +130,7 @@ test('rejects malformed track responses before rendering', async () => {
 
 test('reads signed URLs from JSON and escapes the track ID without a bucket', async () => {
   mock.method(globalThis, 'fetch', async (url, options) => {
-    assert.equal(url, '/track/track/track%2Fid')
+    assert.equal(url, '/track/track%2Fid')
     assert.equal(options.cache, 'no-store')
     return Response.json({ trackPresignedLink: ' https://r2.example/audio?X-Amz-Signature=abc\n' })
   })
@@ -168,7 +168,7 @@ test('uses track metadata and converts milliseconds into player seconds', () => 
   assert.equal(trackDurationSeconds({}), null)
   assert.equal(trackLabel({ ...track, trackTitle: ' ' }), 'Track 550e8400')
   assert.equal(trackAuthor({ ...track, author: null }), 'Unknown artist')
-  assert.equal(getSigningEndpoint({ trackId: 'track/id' }), '/track/track/track%2Fid')
+  assert.equal(getSigningEndpoint({ trackId: 'track/id' }), '/track/track%2Fid')
 })
 
 test('track detail exposes both signed audio and cover links', async () => {

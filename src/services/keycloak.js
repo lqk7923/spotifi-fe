@@ -18,4 +18,5 @@ export function keycloakConfig(env = {}) {
 export const auth = createAuthSession(
   () => new Keycloak(keycloakConfig(import.meta.env)),
   () => `${window.location.origin}${window.location.pathname}${window.location.search}`,
+  () => new URL(`${import.meta.env.BASE_URL}silent-check-sso.html`, window.location.origin).href,
 )

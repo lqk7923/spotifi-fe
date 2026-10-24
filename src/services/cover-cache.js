@@ -1,4 +1,4 @@
-import { getAlbumTracks, getTrackLinks } from './music-api.js'
+import { getAlbumTracks } from './music-api.js'
 
 const CACHE_NAME = 'music-covers-v1'
 const MAX_COVERS = 100
@@ -26,7 +26,7 @@ export function coverCacheKey(url) {
 }
 
 async function renewCover(item) {
-  if (item.trackId) return coverUrl(await getTrackLinks(item))
+  // Renew artwork via metadata, never through the audio-signing endpoint.
   if (item.albumId) return coverUrl(await getAlbumTracks(item.albumId))
   return null
 }

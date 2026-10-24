@@ -1,4 +1,5 @@
-export function createAuthSession(createAdapter, redirectUri) {
+export function createAuthSession(createAdapter, redirectUri,
+  silentCheckSsoUri = () => new URL('/silent-check-sso.html', redirectUri()).href) {
   let adapter
   let initialization
   let snapshot = { status: 'loading', user: null, error: '' }
@@ -28,13 +29,13 @@ export function createAuthSession(createAdapter, redirectUri) {
           }
           adapter.onTokenExpired = () => { void session.getAccessToken().catch(() => {}) }
           const authenticated = await adapter.init({
-            onLoad: 'login-required', flow: 'standard', pkceMethod: 'S256',
+            onLoad: 'check-sso', flow: 'standard', pkceMethod: 'S256',
+            silentCheckSsoRedirectUri: silentCheckSsoUri(), silentCheckSsoFallback: false,
           })
-          // Require login at startup, then let the signed-out UI handle session loss.
-          // Otherwise SDK clearToken() automatically redirects, including on logout failure.
+          // Guests browse without redirecting; explicit login opens Keycloak.
           adapter.loginRequired = false
           if (!authenticated || !adapter.token) {
-            signedOut()
+            signedOut('')
             return
           }
           const claims = adapter.tokenParsed || {}
@@ -67,6 +68,7 @@ export function createAuthSession(createAdapter, redirectUri) {
       await session.initialize()
       if (!adapter) return
       try {
+        publish({ status: 'redirecting', user: null, error: '' })
         await adapter.login({ redirectUri: redirectUri() })
       } catch {
         signedOut('Could not open sign-in. Please try again.')
@@ -76,6 +78,7 @@ export function createAuthSession(createAdapter, redirectUri) {
       await session.initialize()
       if (!adapter) return
       try {
+        publish({ status: 'redirecting', user: null, error: '' })
         await adapter.register({ redirectUri: redirectUri() })
       } catch {
         signedOut('Could not open registration. Please try again.')

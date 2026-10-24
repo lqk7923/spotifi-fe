@@ -1,5 +1,8 @@
-import { useRef } from 'react'
-import useAudioPlayer from '../features/player/hooks/useAudioPlayer.js'
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react'
+import AuthenticatedPlayer from '../features/player/components/AuthenticatedPlayer.jsx'
+import { createGuestPlayer } from '../features/player/lib/guest-player.js'
+import ListenPrompt from '../features/auth/ListenPrompt.jsx'
+import { auth } from '../services/keycloak.js'
 import useMusicLibrary from '../features/library/hooks/useMusicLibrary.js'
 import QueueSidebar from '../features/player/components/QueueSidebar.jsx'
 import BottomBar from '../features/player/components/BottomBar.jsx'
@@ -10,9 +13,11 @@ import useMusicLayout from '../layouts/music/useMusicLayout.js'
 import { navigate } from './routing/navigation.js'
 
 export default function MusicApp({ albumId, page: Page }) {
-  const musicLibrary = useMusicLibrary(albumId)
-  const audioRef = useRef(null)
-  const player = useAudioPlayer(musicLibrary.collectionTracks, audioRef)
+  const { status } = useSyncExternalStore(auth.subscribe, auth.getSnapshot)
+  const authenticated = status === 'authenticated'
+  const [listenPrompt, setListenPrompt] = useState(null)
+  const requestLogin = useCallback(track => setListenPrompt({ track }), [])
+  const musicLibrary = useMusicLibrary(albumId, requestLogin)
   const layout = useMusicLayout()
   const searchRef = useRef(null)
   const libraryRef = useRef(null)
@@ -21,7 +26,10 @@ export default function MusicApp({ albumId, page: Page }) {
   const library = {
     ...musicLibrary,
     resetFilters: () => { musicLibrary.resetFilters(); navigate('/') },
-    showLiked: () => { musicLibrary.showLiked(); navigate('/') },
+    showLiked: () => {
+      if (!authenticated) { requestLogin(musicLibrary.collectionTracks[0]); return }
+      musicLibrary.showLiked(); navigate('/')
+    },
   }
   const focusLibrary = () => libraryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const focusSearch = () => searchRef.current?.focus()
@@ -30,9 +38,8 @@ export default function MusicApp({ albumId, page: Page }) {
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  return (
+  const renderPage = player => (
     <>
-      <audio ref={audioRef} {...player.audioEvents} preload="metadata" hidden />
       <MusicLayout
         layout={layout}
         hasCurrentTrack={!!player.currentTrack}
@@ -51,6 +58,11 @@ export default function MusicApp({ albumId, page: Page }) {
       >
         <Page albumId={albumId} library={library} player={player} libraryRef={libraryRef} mainRef={mainRef} onLibrary={focusLibrary} />
       </MusicLayout>
+      {listenPrompt && <ListenPrompt track={listenPrompt.track} onClose={() => setListenPrompt(null)} />}
     </>
   )
+
+  return authenticated
+    ? <AuthenticatedPlayer tracks={musicLibrary.collectionTracks}>{renderPage}</AuthenticatedPlayer>
+    : renderPage(createGuestPlayer(musicLibrary.collectionTracks, requestLogin))
 }

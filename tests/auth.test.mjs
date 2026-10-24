@@ -35,7 +35,7 @@ test('requires all three public Keycloak settings and never substitutes the API 
   }), { url: 'https://auth.example', realm: 'music', clientId: 'web' })
 })
 
-test('initializes once with login-required, code flow and PKCE S256 before protected requests', async () => {
+test('checks SSO silently once with code flow and PKCE before protected requests', async () => {
   let release
   const gate = new Promise(resolve => { release = resolve })
   const { session, events } = setup({ async init(options) { events.push(['init', options]); await gate; return true } })
@@ -51,7 +51,8 @@ test('initializes once with login-required, code flow and PKCE S256 before prote
   release()
   await pending
   assert.deepEqual(events, [
-    ['init', { onLoad: 'login-required', flow: 'standard', pkceMethod: 'S256' }],
+    ['init', { onLoad: 'check-sso', flow: 'standard', pkceMethod: 'S256',
+      silentCheckSsoRedirectUri: 'https://web.example/silent-check-sso.html', silentCheckSsoFallback: false }],
     ['refresh', 30], ['fetch'],
   ])
   assert.equal(session.getSnapshot().user.name, 'listener')
@@ -206,10 +207,36 @@ test('different accounts have different persisted likes keys', async () => {
   assert.notEqual(first.session.getSnapshot().user.storageKey, second.session.getSnapshot().user.storageKey)
 })
 
-test('configuration/init failures remain outside the app and expose no user', async () => {
+test('configuration/init failures expose no user or protected access', async () => {
   const session = createAuthSession(() => keycloakConfig(), () => '')
   await session.initialize()
   assert.equal(session.getSnapshot().status, 'error')
   assert.match(session.getSnapshot().error, /VITE_KEYCLOAK_URL/)
   assert.equal(session.getSnapshot().user, null)
+  await assert.rejects(session.getAccessToken(), /log in again/)
+})
+
+test('an anonymous SSO check stays signed out without login, refresh, or a session-expired error', async () => {
+  const { session, events } = setup({ authenticated: false, token: undefined,
+    async init(options) { events.push(['init', options]); return false } })
+  await session.initialize()
+  assert.equal(session.getSnapshot().status, 'signed-out')
+  assert.equal(session.getSnapshot().error, '')
+  await assert.rejects(session.getAccessToken(), /log in again/)
+  assert.deepEqual(events.map(event => event[0]), ['init'])
+})
+
+test('explicit login shows the transition state and a failed redirect returns to guest browsing', async () => {
+  let rejectLogin
+  const loginGate = new Promise((_, reject) => { rejectLogin = reject })
+  const { session } = setup({ async login() { await loginGate } })
+  const pending = session.login()
+  await session.initialize()
+  await Promise.resolve()
+  assert.equal(session.getSnapshot().status, 'redirecting')
+  assert.equal(session.getSnapshot().user, null)
+  rejectLogin(new Error('Offline'))
+  await pending
+  assert.equal(session.getSnapshot().status, 'signed-out')
+  assert.match(session.getSnapshot().error, /Could not open sign-in/)
 })

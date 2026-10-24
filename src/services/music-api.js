@@ -1,8 +1,8 @@
 import { isValidAlbum, isValidTrack, trackKey } from '../lib/tracks.js'
-import { apiBase, apiRequest as request } from './api-client.js'
+import { apiBase, apiRequest as request, catalogRequest } from './api-client.js'
 
 async function getTrackList(path, signal) {
-  const response = await request(path, signal)
+  const response = await catalogRequest(path, signal)
   const tracks = await response.json()
   if (!Array.isArray(tracks) || !tracks.every(isValidTrack)) {
     throw new Error('The music server returned an unexpected track list.')
@@ -20,7 +20,7 @@ export function getTracks(signal) {
  * @returns {Promise<import('../lib/tracks.js').AlbumInfo>}
  */
 export async function getAlbumTracks(albumId, signal) {
-  const response = await request(`/album/${encodeURIComponent(albumId)}/tracks`, signal)
+  const response = await catalogRequest(`/album/${encodeURIComponent(albumId)}/tracks`, signal)
   const album = await response.json()
   if (!isValidAlbum(album)) {
     throw new Error('The music server returned an unexpected album.')
@@ -30,7 +30,7 @@ export async function getAlbumTracks(albumId, signal) {
 
 export async function getTrackLinks(track, signal) {
   const response = await request(
-    `/track/track/${encodeURIComponent(track.trackId)}`,
+    `/track/${encodeURIComponent(track.trackId)}`,
     signal,
   )
   return response.json()
@@ -57,7 +57,7 @@ export async function getPlaybackUrl(track, signal) {
 }
 
 export function getSigningEndpoint(track) {
-  return `${apiBase}/track/track/${encodeURIComponent(track.trackId)}`
+  return `${apiBase}/track/${encodeURIComponent(track.trackId)}`
 }
 
 export function errorMessage(error, fallback) {

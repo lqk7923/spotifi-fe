@@ -64,19 +64,18 @@ test('an expired uncached cover renews once and stores the replacement image', a
   assert.equal(renewals, 1)
 })
 
-test('expired track and album covers use their respective new API contracts', async () => {
+test('expired track and album covers renew via metadata without signing audio', async () => {
   for (const metadata of [item, { albumId: 'album', albumCoverPresignedUrl: item.coverPresignedUrl }]) {
     const requests = []
     mock.method(globalThis, 'fetch', async url => {
       requests.push(url)
       if (url === item.coverPresignedUrl) return new Response(null, { status: 403 })
-      if (url === '/track/track/track') return Response.json({ coverPresignedLink: 'https://r2.example/fresh.png' })
       if (url === '/album/album/tracks') return Response.json({ albumId: 'album', albumTitle: 'Album', author: 'Artist', albumTracks: [], albumCoverPresignedUrl: 'https://r2.example/fresh.png' })
       assert.equal(url, 'https://r2.example/fresh.png')
       return imageResponse()
     })
     await createCoverCache({ storage: null }).load(metadata)
-    assert.equal(requests[1], metadata.trackId ? '/track/track/track' : '/album/album/tracks')
+    assert.equal(requests[1], '/album/album/tracks')
     assert.equal(requests.length, 3)
     mock.restoreAll()
   }

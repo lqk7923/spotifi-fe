@@ -70,7 +70,7 @@ http.createServer(async (request, response) => {
     }))
     return
   }
-  if (url.pathname.startsWith('/track/track/')) {
+  if (/^\/track\/[^/]+$/.test(url.pathname)) {
     requests.push(url.pathname)
     if (mode === 'playback-error') { response.writeHead(500); response.end('Track not found'); return }
     if (mode === 'race' && url.pathname.endsWith(tracks[0].trackId)) {

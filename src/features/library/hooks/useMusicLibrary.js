@@ -4,11 +4,11 @@ import useAlbum from './useAlbum.js'
 import useLibraryFilters from './useLibraryFilters.js'
 import useLikedTracks from './useLikedTracks.js'
 
-export default function useMusicLibrary(albumId) {
+export default function useMusicLibrary(albumId, onRequireLogin) {
   const catalog = useTracks()
   const album = useAlbum(albumId)
   const filters = useLibraryFilters(albumId)
-  const { likes, isLiked, toggleLike } = useLikedTracks()
+  const { likes, isLiked, toggleLike } = useLikedTracks(onRequireLogin)
   const { tracks } = catalog
   const albums = getAlbums(tracks)
   const collectionTracks = albumId ? album.tracks : tracks

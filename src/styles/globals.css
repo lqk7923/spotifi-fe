@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Keycloak is built separately and does not use Tailwind utilities. */
+@source not "../../keycloak-theme";
+
 @plugin "daisyui" {
   themes: dark --default;
 }

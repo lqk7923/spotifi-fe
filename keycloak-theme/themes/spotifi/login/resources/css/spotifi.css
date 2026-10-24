@@ -1,0 +1,885 @@
+/* The parent supplies all forms, validation, session scripts and field order.
+   Keep selectors scoped to Keycloak's login layout, including its other steps. */
+:root {
+  color-scheme: dark;
+  --spotifi-green: #1ed760;
+  --spotifi-text: #f7f7f7;
+  --spotifi-muted: #b3b3b3;
+  --spotifi-surface: #121212;
+  --spotifi-field: #121212;
+  --spotifi-border: #727272;
+  --pf-global--Color--100: #f7f7f7;
+  --pf-global--Color--200: #b3b3b3;
+  --pf-global--Color--300: #f7f7f7;
+  --pf-global--BackgroundColor--100: #121212;
+  --pf-global--BackgroundColor--200: #121212;
+  --pf-global--primary-color--100: #1ed760;
+  --pf-global--danger-color--100: #ff9b9b;
+  --pf-global--danger-color--200: #ff9b9b;
+}
+
+html.login-pf {
+  min-height: 100%;
+  background: #121212;
+}
+
+.login-pf body {
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  background: #121212;
+  color: var(--spotifi-text);
+  font-family: Inter, 'Segoe UI', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.login-pf *,
+.login-pf *::before,
+.login-pf *::after {
+  box-sizing: border-box;
+}
+
+.login-pf .login-pf-page {
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding: 44px 24px 48px;
+}
+
+#kc-header {
+  margin: 0 0 30px;
+  color: var(--spotifi-text);
+  text-align: center;
+}
+
+#kc-header-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  color: #fff;
+  /* Keep the brand name available to screen readers, show only the icon. */
+  font-size: 0;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -1.1px;
+  text-transform: none;
+  white-space: normal;
+}
+
+#kc-header-wrapper::before {
+  content: '';
+  display: block;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  background: url('../img/logo-white.svg') center / contain no-repeat;
+}
+
+.login-pf-page .card-pf {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 36px 44px 32px;
+  border: 0;
+  border-top: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--spotifi-text);
+}
+
+.spotifi-footer {
+  margin: 22px 0 0;
+  color: #a7a7a7;
+  font-size: 12px;
+  text-align: center;
+}
+
+.login-pf-page .login-pf-header {
+  margin: 0 0 28px;
+  color: var(--spotifi-text);
+  text-align: center;
+}
+
+#kc-page-title {
+  float: none;
+  margin: 0;
+  padding: 0;
+  color: var(--spotifi-text);
+  font-family: inherit;
+  font-size: clamp(25px, 5vw, 32px);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -1px;
+  overflow-wrap: anywhere;
+}
+
+/* Register's dynamic user profile uses Bootstrap columns in the parent theme. */
+.login-pf-page .form-horizontal .form-group {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.login-pf-page .form-group {
+  margin-bottom: 21px;
+}
+
+.login-pf-page .form-group > [class*='col-'],
+.login-pf-header [class*='col-'] {
+  float: none;
+  width: 100%;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+#kc-content,
+#kc-content-wrapper,
+#kc-form-wrapper {
+  width: 100%;
+  margin: 0;
+}
+
+.login-pf-page label,
+.login-pf-page .pf-c-form__label,
+.login-pf-page .pf-c-form__label-text {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--spotifi-text);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.login-pf-page input:where(:not([type='checkbox']):not([type='radio']):not([type='submit']):not([type='hidden'])),
+.login-pf-page select,
+.login-pf-page textarea {
+  display: block;
+  width: 100%;
+  min-height: 50px;
+  padding: 13px 15px;
+  border: 1px solid var(--spotifi-border);
+  border-radius: 7px;
+  background: var(--spotifi-field);
+  color: var(--spotifi-text);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+  box-shadow: none;
+  transition: border-color 120ms, background-color 120ms;
+}
+
+.login-pf-page input::placeholder {
+  color: #a7a7a7;
+  opacity: 1;
+}
+
+.login-pf-page input:hover,
+.login-pf-page select:hover,
+.login-pf-page textarea:hover {
+  border-color: #fff;
+}
+
+.login-pf-page input:focus,
+.login-pf-page select:focus,
+.login-pf-page textarea:focus,
+.login-pf-page button:focus,
+.login-pf-page a:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.login-pf-page input[aria-invalid='true'],
+.login-pf-page select[aria-invalid='true'],
+.login-pf-page textarea[aria-invalid='true'],
+.login-pf-page .has-error input,
+.login-pf-page .has-error select,
+.login-pf-page .has-error textarea {
+  border-color: #ff9b9b;
+  /* The parent error icon can otherwise tile after our background shorthand. */
+  background-image: none !important;
+  background-color: var(--spotifi-field);
+}
+
+.login-pf-page input:-webkit-autofill {
+  -webkit-text-fill-color: var(--spotifi-text);
+  box-shadow: 0 0 0 1000px var(--spotifi-field) inset;
+  caret-color: var(--spotifi-text);
+}
+
+.login-pf-page .pf-c-input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border-radius: 7px;
+  background: var(--spotifi-field);
+}
+
+.login-pf-page .pf-c-input-group > input {
+  flex: 1;
+  min-width: 0;
+  border-right: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.login-pf-page .pf-c-input-group > button {
+  flex: 0 0 48px;
+  min-width: 48px;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--spotifi-border);
+  border-left: 0;
+  border-radius: 0 7px 7px 0;
+  background: transparent;
+  color: var(--spotifi-muted);
+  box-shadow: none;
+}
+
+.login-pf-page .pf-c-input-group > button::after {
+  border: 0;
+}
+
+.login-pf-page .pf-c-input-group:focus-within {
+  outline: none;
+  box-shadow: none;
+}
+
+.login-pf-page .pf-c-input-group > input:focus {
+  outline: none;
+}
+
+.login-pf-page .pf-c-input-group:hover > input,
+.login-pf-page .pf-c-input-group:hover > button {
+  border-color: #fff;
+}
+
+.login-pf-page a {
+  color: var(--spotifi-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-pf-page a:hover {
+  color: var(--spotifi-green);
+}
+
+.login-pf-page a:focus-visible,
+.login-pf-page button:focus-visible,
+.login-pf-page input[type='submit']:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.login-pf-page .pf-c-button,
+.login-pf-page .btn {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.login-pf-page .pf-c-button.pf-m-primary,
+.login-pf-page input[type='submit'] {
+  width: 100%;
+  min-height: 50px;
+  padding: 13px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--spotifi-green);
+  color: #071b0e;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.5;
+  text-shadow: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.login-pf-page .pf-c-button.pf-m-primary::after {
+  border: 0;
+}
+
+.login-pf-page .pf-c-button.pf-m-primary:hover,
+.login-pf-page input[type='submit']:hover {
+  background: #3be477;
+  color: #071b0e;
+}
+
+#kc-form-login #kc-login {
+  transition: transform 140ms ease, background-color 120ms ease;
+}
+
+#kc-form-login #kc-login:hover:not(:disabled) {
+  transform: scale(1.03);
+}
+
+.login-pf-page button:disabled,
+.login-pf-page input:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+#kc-form-buttons {
+  float: none;
+  width: 100%;
+  margin-top: 26px;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.login-pf-page .login-pf-settings {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 13px;
+}
+
+.spotifi-login .login-pf-settings {
+  justify-content: flex-end;
+}
+
+#kc-form-options {
+  float: none;
+  width: auto;
+  padding: 0;
+}
+
+#kc-form-options .checkbox {
+  margin: 0;
+  color: var(--spotifi-muted);
+}
+
+#kc-form-options .checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  color: var(--spotifi-muted);
+  font-weight: 400;
+}
+
+.login-pf-page input[type='checkbox'],
+.login-pf-page input[type='radio'] {
+  position: static;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--spotifi-green);
+}
+
+#kc-info {
+  margin: 30px 0 0;
+  padding-top: 25px;
+  border-top: 1px solid #ffffff1a;
+}
+
+#kc-info-wrapper {
+  padding: 0;
+  background: transparent;
+  color: var(--spotifi-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+#kc-registration {
+  margin: 0;
+}
+
+#kc-registration a {
+  display: inline-block;
+  margin: 0;
+  font-weight: 600;
+}
+
+.spotifi-login #kc-info {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 0;
+}
+
+#kc-register-form #kc-form-options {
+  float: none;
+  width: 100%;
+  margin: 6px 0 0;
+  text-align: center;
+}
+
+#kc-register-form .spotifi-register-login-prompt,
+#kc-registration .spotifi-login-register-prompt {
+  margin: 0 0 8px;
+  color: var(--spotifi-muted);
+  font-size: 14px;
+}
+
+#kc-register-form #kc-form-options a {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+#kc-register-form #kc-form-buttons {
+  order: -1;
+  margin-top: 8px;
+}
+
+#kc-register-form > .form-group:last-of-type {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-bottom: 0;
+}
+
+.login-pf-page .subtitle {
+  display: block;
+  margin: 0 0 10px;
+  color: var(--spotifi-muted);
+  font-size: 12px;
+  font-weight: 400;
+  text-align: center;
+}
+
+.login-pf-page .required,
+.login-pf-page .kc-feedback-text.pf-m-error,
+.login-pf-page .pf-c-form__helper-text.pf-m-error {
+  color: #ff9b9b;
+}
+
+.login-pf-page .pf-c-form__helper-text {
+  display: block;
+  margin-top: 7px;
+  color: var(--spotifi-muted);
+  font-size: 12px;
+}
+
+.login-pf-page .pf-c-alert,
+.login-pf-page .alert {
+  margin-bottom: 24px;
+  padding: 14px;
+  border: 1px solid #ffffff25;
+  border-radius: 8px;
+  background: #ffffff08;
+  color: var(--spotifi-text);
+  box-shadow: none;
+}
+
+.login-pf-page .pf-c-alert__title {
+  color: inherit;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.login-pf-page .alert-error,
+.login-pf-page .pf-c-alert.pf-m-danger {
+  border-color: #ff9b9b55;
+  background: #ff9b9b0d;
+  color: #ffc4c4;
+}
+
+.login-pf-page .alert-success {
+  border-color: #1ed76055;
+  color: #8aefad;
+}
+
+#kc-locale {
+  position: static;
+  float: none;
+  width: auto;
+  margin-bottom: 20px;
+  color: var(--spotifi-muted);
+  text-align: end;
+}
+
+#kc-locale-dropdown {
+  position: relative;
+}
+
+#kc-locale-dropdown button,
+#kc-locale-dropdown a {
+  color: var(--spotifi-muted);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+#kc-locale ul {
+  z-index: 10;
+  padding: 6px;
+  border: 1px solid #ffffff25;
+  border-radius: 8px;
+  background: #242424;
+}
+
+#kc-locale ul a {
+  color: var(--spotifi-text);
+}
+
+.login-pf-page .kc-social-links {
+  padding: 0;
+  list-style: none;
+}
+
+.login-pf-page .kc-social-item {
+  min-height: 46px;
+  margin-bottom: 10px;
+  padding: 12px 18px;
+  border: 1px solid #727272;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--spotifi-text);
+  text-decoration: none;
+}
+
+.login-pf-page .kc-social-item:hover {
+  border-color: #fff;
+  background: #ffffff08;
+  color: var(--spotifi-text);
+}
+
+.login-pf-page .kc-social-section h2,
+.login-pf-page .instruction {
+  color: var(--spotifi-muted);
+}
+
+.login-pf-page hr {
+  border-color: #ffffff1a;
+}
+
+.login-pf-page ::selection {
+  background: var(--spotifi-green);
+  color: #071b0e;
+}
+
+/* Email entry, followed by password, profile and terms on one native form. */
+.spotifi-registration .login-pf-page {
+  padding-top: 28px;
+}
+
+.spotifi-registration #kc-header {
+  margin-bottom: 22px;
+}
+
+.spotifi-registration .card-pf {
+  padding-top: 28px;
+  padding-bottom: 24px;
+}
+
+.spotifi-registration .login-pf-header {
+  margin-bottom: 25px;
+}
+
+.spotifi-registration .login-pf-header .subtitle {
+  display: none;
+}
+
+.spotifi-registration:not(.spotifi-registration-email) #kc-page-title {
+  display: none;
+}
+
+.spotifi-registration:not(.spotifi-registration-email) .login-pf-header {
+  margin-bottom: 0;
+}
+
+.spotifi-register-progress {
+  height: 4px;
+  margin: 0 0 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ffffff20;
+}
+
+.spotifi-register-progress-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--spotifi-green);
+  transform-origin: left;
+  transition: transform 280ms ease;
+}
+
+.spotifi-register-progress[hidden],
+.spotifi-register-step-navigation[hidden],
+.spotifi-register-step-caption[hidden],
+#kc-register-form > .form-group[hidden],
+.spotifi-register-step [hidden] {
+  display: none !important;
+}
+
+.spotifi-register-step-navigation {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+.spotifi-register-step-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spotifi-register-step-status {
+  color: var(--spotifi-muted);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.spotifi-register-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.spotifi-register-viewport {
+  overflow: hidden;
+  margin: -5px;
+}
+
+.spotifi-register-track {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  transition: transform 280ms cubic-bezier(.22, .68, .2, 1);
+}
+
+.spotifi-register-step {
+  flex: 0 0 100%;
+  min-width: 0;
+  height: 0;
+  padding: 5px;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.spotifi-register-step.is-active,
+.spotifi-register-step.is-leaving {
+  height: auto;
+  min-height: 220px;
+  visibility: visible;
+}
+
+.spotifi-register-step[data-register-stage='email'].is-active,
+.spotifi-register-step[data-register-stage='terms'].is-active {
+  min-height: 0;
+}
+
+.login-pf-page .spotifi-register-terms {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 8px;
+  background: #2a2a2a;
+}
+
+.login-pf-page .spotifi-register-step .spotifi-register-terms {
+  /* Match the caption's inset on both sides: 52px back button plus 12px gap. */
+  margin-inline: 64px;
+}
+
+.login-pf-page .spotifi-register-terms label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.spotifi-register-step-caption {
+  margin: 0;
+  color: var(--spotifi-text);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.spotifi-register-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.spotifi-register-step .form-group {
+  margin-bottom: 16px;
+}
+
+.spotifi-register-controls [hidden],
+#kc-register-form > .spotifi-register-error[hidden] {
+  display: none !important;
+}
+
+#kc-register-form[data-spotifi-steps] #kc-form-buttons {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  order: 0;
+}
+
+.login-pf-page .spotifi-register-back {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--spotifi-muted);
+  font-family: inherit;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.login-pf-page .spotifi-register-back:hover {
+  color: #fff;
+  background: #ffffff08;
+}
+
+.spotifi-register-back svg {
+  width: 28px;
+  height: 28px;
+}
+
+#kc-register-form[data-spotifi-steps] > .form-group:last-of-type {
+  margin-top: 20px;
+  padding-top: 18px;
+}
+
+.spotifi-register-error {
+  margin: 12px 0 0;
+  color: #ff9b9b;
+  font-size: 13px;
+}
+
+.spotifi-register-email-error {
+  margin: 8px 0 0;
+  color: #ff9b9b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.spotifi-password-requirements {
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.spotifi-password-requirements-title {
+  margin: 0 0 12px;
+  color: var(--spotifi-text);
+  font-weight: 650;
+}
+
+.spotifi-password-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spotifi-password-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #fff;
+}
+
+.spotifi-password-rule-marker {
+  position: relative;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1px solid var(--spotifi-border);
+  border-radius: 50%;
+  background: transparent;
+  transition: border-color 120ms, background-color 120ms;
+}
+
+.spotifi-password-rule.is-met .spotifi-password-rule-marker {
+  border-color: var(--spotifi-green);
+  background: var(--spotifi-green);
+}
+
+.spotifi-password-rule.is-met .spotifi-password-rule-marker::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  width: 4px;
+  height: 8px;
+  border: solid #000;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+@media (max-width: 600px) {
+  .login-pf .login-pf-page {
+    padding: 28px 16px 36px;
+  }
+
+  #kc-header {
+    margin-bottom: 24px;
+  }
+
+  #kc-header-wrapper {
+    padding: 0;
+    font-size: 0;
+  }
+
+  .login-pf-page .card-pf {
+    padding: 28px 22px;
+    border-radius: 0;
+  }
+
+  .login-pf-page .login-pf-header {
+    margin-bottom: 25px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-pf-page * {
+    transition: none !important;
+  }
+}
+
+.spotifi-login .login-pf-page {
+  padding-top: 28px;
+}
+
+.spotifi-registration-email #kc-header,
+.spotifi-login #kc-header {
+  margin-bottom: 12px;
+}
+
+.spotifi-registration-email .login-pf-page .card-pf,
+.spotifi-login .login-pf-page .card-pf {
+  padding-top: 8px;
+  padding-bottom: 24px;
+}
+
+.spotifi-registration-email #kc-page-title,
+.spotifi-login #kc-page-title {
+  font-size: clamp(34px, 8vw, 42px);
+}

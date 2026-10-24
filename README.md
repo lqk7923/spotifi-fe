@@ -32,6 +32,10 @@ To change the backend address, copy `.env.example` to `.env.local` and set
 
 ## Keycloak authentication
 
+The custom Spotifi login/registration theme and its Dockerfile are isolated in
+[`keycloak-theme/`](keycloak-theme/README.md). See that guide for building an image,
+preserving the existing deployment, activating the theme, and local previews.
+
 Set these build-time environment variables in `.env.local` and in your hosting
 provider before building production. Restart Vite or rebuild after changes.
 

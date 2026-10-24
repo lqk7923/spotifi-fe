@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" class="login-pf">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Spotifi — Registration design preview</title>
+  <link rel="icon" href="../themes/spotifi/login/resources/img/favicon.svg">
+  <link rel="stylesheet" href="../themes/spotifi/login/resources/css/spotifi.css">
+  <link rel="stylesheet" href="preview.css">
+  <script src="preview.js" defer></script>
+  <script src="../themes/spotifi/login/resources/js/register-steps.js" defer></script>
+</head>
+<body data-page-id="login-register">
+  <main class="login-pf-page">
+    <div id="kc-header"><div id="kc-header-wrapper">Spotifi</div></div>
+    <div class="card-pf">
+      <header class="login-pf-header">
+        <span class="subtitle"><span class="required">*</span> Required fields</span>
+        <h1 id="kc-page-title">Create your account</h1>
+      </header>
+      <div id="kc-content"><div id="kc-content-wrapper">
+        <form id="kc-register-form" class="form-horizontal" data-preview-form>
+          <div class="form-group"><div><label for="firstName">First name</label> *</div><input id="firstName" name="firstName" type="text" autocomplete="off"></div>
+          <div class="form-group"><div><label for="lastName">Last name</label> *</div><input id="lastName" name="lastName" type="text" autocomplete="off"></div>
+          <div class="form-group"><div><label for="email">Email address</label> *</div><input id="email" name="email" type="email" autocomplete="email" placeholder="name@domain.com"></div>
+          <div class="form-group">
+            <label for="password">Password <span class="required">*</span></label>
+            <div class="pf-c-input-group">
+              <input id="password" name="password" type="password" autocomplete="off" required>
+              <button type="button" aria-label="Show password" aria-controls="password" data-preview-password-toggle>
+                <svg class="preview-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <input id="password-confirm" name="password-confirm" type="hidden">
+          <div class="form-group">
+            <input type="checkbox" id="termsAccepted" name="termsAccepted">
+            <label for="termsAccepted">I agree. Let’s make some noise!</label>
+          </div>
+          <div class="form-group">
+            <div id="kc-form-options"><p class="spotifi-register-login-prompt">Already have an account</p><a href="login.html">Login</a></div>
+            <div id="kc-form-buttons"><input class="pf-c-button pf-m-primary" type="submit" value="Create account"></div>
+          </div>
+          <output class="preview-output" aria-live="polite"></output>
+        </form>
+      </div></div>
+    </div>
+    <p class="spotifi-footer">This site is protected by D. and David Martinez<br>Please don't hack it.</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "realm": "spotifi-theme-preview",
+  "displayName": "Spotifi theme preview",
+  "enabled": true,
+  "loginTheme": "spotifi",
+  "registrationAllowed": true,
+  "resetPasswordAllowed": true,
+  "rememberMe": false,
+  "loginWithEmailAllowed": true,
+  "registrationEmailAsUsername": true,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en", "vi"],
+  "defaultLocale": "en",
+  "clients": [
+    {
+      "clientId": "spotifi-web-theme-preview",
+      "name": "Spotifi theme preview",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "redirectUris": ["http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:5173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      }
+    }
+  ]
+}

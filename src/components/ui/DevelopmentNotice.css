@@ -1,3 +1,23 @@
+.development-notice-trigger {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #ffffff26;
+  border-radius: 50%;
+  background: #1f1f1f;
+  color: #b3b3b3;
+  transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.development-notice-trigger:hover {
+  background: #2a2a2a;
+  color: #fff;
+  transform: scale(1.05);
+}
+
 .development-notice {
   position: fixed;
   inset: 0;

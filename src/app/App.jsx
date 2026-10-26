@@ -4,7 +4,6 @@ import AppLink from './routing/AppLink.jsx'
 import useRoute from './routing/useRoute.js'
 import AlbumPage from '../pages/album/AlbumPage.jsx'
 import HomePage from '../pages/home/HomePage.jsx'
-import DevelopmentNotice from '../components/ui/DevelopmentNotice.jsx'
 import '../styles/app.css'
 
 export default function App() {
@@ -19,7 +18,6 @@ export default function App() {
           <AppLink className="btn retry-button" href="/">Back to Home</AppLink>
         </main>
       )}
-      <DevelopmentNotice />
     </>
   )
 }

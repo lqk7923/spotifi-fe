@@ -36,6 +36,13 @@
   margin-inline: auto;
 }
 
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
 .topbar-home.icon-button {
   width: 48px;
   height: 48px;

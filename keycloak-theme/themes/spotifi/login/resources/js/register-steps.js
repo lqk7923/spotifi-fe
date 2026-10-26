@@ -310,10 +310,30 @@ function initializeRegistrationSteps() {
   show(errorStep < 0 ? 0 : errorStep, false)
 }
 
+function initializeGoogleLogin(form) {
+  const providers = document.getElementById('kc-social-providers')
+  const google = providers?.querySelector('#social-google, a:has(.fa-google)')
+  if (!google) return
+
+  const vietnamese = document.documentElement.lang.toLowerCase().startsWith('vi')
+  google.classList.add('spotifi-google-login')
+  const label = google.querySelector('.kc-social-provider-name')
+  if (label) label.textContent = vietnamese ? 'Đăng nhập bằng Google' : 'Continue with Google'
+  google.setAttribute('aria-label', vietnamese ? 'Đăng nhập bằng Google' : 'Continue with Google')
+
+  // Move Keycloak's original links, preserving loginUrl and its session parameters.
+  providers.classList.add('spotifi-login-providers')
+  const heading = providers.querySelector('h2')
+  if (heading) heading.textContent = vietnamese ? 'hoặc' : 'or'
+  const formContainer = document.getElementById('kc-form') || form
+  formContainer.after(providers)
+}
+
 function initializeLoginTheme() {
   const form = document.getElementById('kc-form-login')
   if (!form) return
   document.body.classList.add('spotifi-login')
+  initializeGoogleLogin(form)
   const rememberMe = form.querySelector('input[name="rememberMe"]')
   if (rememberMe) {
     const control = rememberMe.closest('.checkbox') || rememberMe.closest('label') || rememberMe
@@ -326,7 +346,8 @@ function initializeLoginTheme() {
   if (!link || registration.querySelector('.spotifi-login-register-prompt')) return
   const prompt = document.createElement('p')
   prompt.className = 'spotifi-login-register-prompt'
-  prompt.textContent = document.documentElement.lang.toLowerCase().startsWith('vi') ? 'Bạn mới đến Spotifi?' : 'New to Spotifi?'
+  prompt.textContent = "Don't have an account?"
+  link.textContent = 'Sign up'
   registration.replaceChildren(prompt, link)
 }
 

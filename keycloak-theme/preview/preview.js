@@ -34,3 +34,8 @@ document.querySelector('[data-preview-reset-password]')?.addEventListener('click
   event.preventDefault()
   document.querySelector('.preview-output').textContent = 'Design preview only. Password reset is handled by Keycloak.'
 })
+
+document.querySelector('[data-preview-google-login]')?.addEventListener('click', event => {
+  event.preventDefault()
+  document.querySelector('.preview-output').textContent = 'Design preview only. Google sign-in is handled by the configured Keycloak identity provider.'
+})

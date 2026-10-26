@@ -2,3 +2,4 @@
 body { margin: 0; }
 .preview-eye { width: 20px; height: 20px; vertical-align: middle; }
 .preview-output { display: block; margin-top: 16px; color: #8aefad; text-align: center; }
+.preview-output:empty { display: none; }

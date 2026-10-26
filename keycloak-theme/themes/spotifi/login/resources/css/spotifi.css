@@ -403,8 +403,8 @@ html.login-pf {
 }
 
 .spotifi-login #kc-info {
-  margin-top: 20px;
-  padding-top: 18px;
+  margin-top: 48px;
+  padding-top: 0;
   border-top: 0;
 }
 
@@ -549,6 +549,83 @@ html.login-pf {
 .login-pf-page .kc-social-section h2,
 .login-pf-page .instruction {
   color: var(--spotifi-muted);
+}
+
+.spotifi-login-providers {
+  display: flex;
+  flex-direction: column;
+  margin: 16px 0 0;
+}
+
+.spotifi-login-providers > hr {
+  display: none;
+}
+
+.spotifi-login-providers > .kc-social-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+
+.spotifi-login-providers .kc-social-links > li {
+  width: 100%;
+  margin: 0;
+}
+
+.spotifi-login-providers .kc-social-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.spotifi-login-providers .kc-social-item::after {
+  border: 0;
+}
+
+.spotifi-login-providers .spotifi-google-login {
+  position: relative;
+  padding-inline: 48px;
+  transition: transform 140ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.spotifi-login-providers .spotifi-google-login:hover:not([aria-disabled='true']):not(.pf-m-aria-disabled) {
+  transform: scale(1.03);
+}
+
+.spotifi-google-login::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 18px;
+  width: 20px;
+  height: 20px;
+  background: url('../img/google.svg') center / contain no-repeat;
+}
+
+.spotifi-google-login .kc-social-provider-logo {
+  display: none;
+}
+
+.spotifi-google-login .kc-social-provider-name {
+  position: static;
+  inset: auto;
+}
+
+.spotifi-login .spotifi-login-providers > h2 {
+  display: block;
+  margin: 0 0 16px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  text-transform: none;
 }
 
 .login-pf-page hr {
@@ -866,6 +943,33 @@ html.login-pf {
 
 .spotifi-login .login-pf-page {
   padding-top: 28px;
+}
+
+.spotifi-login #kc-content-wrapper {
+  max-width: 325px;
+  margin-inline: auto;
+}
+
+.spotifi-login #kc-form-login > .form-group:not(.login-pf-settings):not(#kc-form-buttons) {
+  margin-bottom: 16px;
+}
+
+.spotifi-login #kc-form-buttons {
+  margin-top: 20px;
+}
+
+.spotifi-login .login-pf-page label,
+.spotifi-login .login-pf-settings {
+  font-size: 15px;
+}
+
+.spotifi-login #kc-info-wrapper,
+.spotifi-login #kc-registration .spotifi-login-register-prompt {
+  font-size: 16px;
+}
+
+.spotifi-login .spotifi-footer {
+  font-size: 13px;
 }
 
 .spotifi-registration-email #kc-header,

@@ -2,16 +2,30 @@ import { useRef } from 'react'
 import { Construction, Info, X } from 'lucide-react'
 import './DevelopmentNotice.css'
 
-const completedUpdates = [
-  'Trang chủ, thư viện nhạc và chi tiết album.',
-  'Tìm kiếm bài hát, nghệ sĩ và album.',
-  'Phát nhạc và điều khiển trình phát.',
-]
-
-const latestUpdates = [
-  'Đăng nhập và đăng ký tài khoản Spotifi.',
-  'Duyệt nhạc khi chưa đăng nhập; đăng nhập để nghe.',
-  'Đăng xuất về trang đăng nhập; đăng nhập lại về trang chủ.',
+const updates = [
+  {
+    date: '2026-10-27',
+    label: '27/10/2026',
+    items: ['Đăng nhập bằng tài khoản Google.'],
+  },
+  {
+    date: '2026-10-24',
+    label: '24/10/2026',
+    items: [
+      'Đăng nhập và đăng ký tài khoản Spotifi.',
+      'Duyệt nhạc khi chưa đăng nhập; đăng nhập để nghe.',
+      'Đăng xuất về trang đăng nhập; đăng nhập lại về trang chủ.',
+    ],
+  },
+  {
+    date: '2026-10-14',
+    label: '14/10/2026',
+    items: [
+      'Trang chủ, thư viện nhạc và chi tiết album.',
+      'Tìm kiếm bài hát, nghệ sĩ và album.',
+      'Phát nhạc và điều khiển trình phát.',
+    ],
+  },
 ]
 
 export default function DevelopmentNotice() {
@@ -46,24 +60,17 @@ export default function DevelopmentNotice() {
           </div>
           <h2 id="development-notice-title">Thông báo</h2>
           <p id="development-notice-description">Project này còn đang trong giai đoạn phát triển.</p>
-          <section className="development-notice-updates" aria-labelledby="development-notice-updates-title">
-            <div className="development-notice-updates-heading">
-              <h3 id="development-notice-updates-title">Đã cập nhật</h3>
-              <time dateTime="2026-10-14">14/10/2026</time>
-            </div>
-            <ul>
-              {completedUpdates.map(update => <li key={update}>{update}</li>)}
-            </ul>
-          </section>
-          <section className="development-notice-updates" aria-labelledby="development-notice-latest-updates-title">
-            <div className="development-notice-updates-heading">
-              <h3 id="development-notice-latest-updates-title">Đã cập nhật</h3>
-              <time dateTime="2026-10-24">24/10/2026</time>
-            </div>
-            <ul>
-              {latestUpdates.map(update => <li key={update}>{update}</li>)}
-            </ul>
-          </section>
+          {updates.map(({ date, label, items }) => (
+            <section key={date} className="development-notice-updates" aria-labelledby={`development-notice-updates-${date}`}>
+              <div className="development-notice-updates-heading">
+                <h3 id={`development-notice-updates-${date}`}>Đã cập nhật</h3>
+                <time dateTime={date}>{label}</time>
+              </div>
+              <ul>
+                {items.map(item => <li key={item}>{item}</li>)}
+              </ul>
+            </section>
+          ))}
           <button type="submit" className="development-notice-confirm" autoFocus>Okeee</button>
         </form>
       </dialog>

@@ -55,8 +55,9 @@ public BE root for static hosting. Missing Keycloak settings display a configura
 error and prevent protected API requests; authentication cannot be bypassed by
 omitting settings.
 
-The app renders Home immediately and initializes `keycloak-js` with `check-sso`,
-Authorization Code Flow and PKCE S256 in the background. The public
+The app shows the Spotify loading screen while initializing `keycloak-js` with
+`check-sso`, Authorization Code Flow and PKCE S256. Home mounts after the session
+check finishes, so returning users never briefly see guest sign-in controls. The public
 `silent-check-sso.html` callback checks an existing session without navigating
 away from Home. Silent-check fallback redirects are disabled; browsers that block
 third-party cookies let the visitor sign in explicitly instead. Login and account
@@ -64,7 +65,7 @@ creation are hosted by Keycloak. Enable **Realm settings > Login > User registra
 so the Keycloak login page exposes its registration link. Guests see **Sign up**
 and a white **Log in** button at the top right. Selecting a track opens a sign-in
 dialog with its artwork; no audio element or preloader is mounted for guests.
-The Spotify loading screen appears during an explicit login/register redirect.
+The Spotify loading screen also appears during an explicit login/register redirect.
 Passwords are
 never collected by this app. Access and refresh tokens stay in SDK memory and
 are never written to localStorage, sessionStorage, or Cache Storage.

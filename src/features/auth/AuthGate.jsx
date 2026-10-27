@@ -7,7 +7,9 @@ export default function AuthGate({ children }) {
   const { status, user, error, logoutFailed } = useSyncExternalStore(auth.subscribe, auth.getSnapshot)
   useEffect(() => { void auth.initialize() }, [])
 
-  if (status === 'redirecting') return <AuthLoading />
+  if (status === 'loading' || status === 'redirecting') {
+    return <AuthLoading checkingSession={status === 'loading'} />
+  }
 
   return (
     <div className="auth-content" key={user ? `account:${user.id}` : 'guest'}>

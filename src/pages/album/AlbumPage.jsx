@@ -1,4 +1,4 @@
-import { CircleAlert } from 'lucide-react'
+import { CircleAlert, LoaderCircle } from 'lucide-react'
 import TrackLibrary from '../../features/library/components/TrackLibrary.jsx'
 import AlbumHeader from './components/AlbumHeader.jsx'
 import AlbumActions from './components/AlbumActions.jsx'
@@ -9,7 +9,12 @@ function AlbumContent({ library, player, libraryRef }) {
   const { selectedAlbum, collectionTracks, loading, error, albumNotFound } = library
 
   if (loading) {
-    return <p className="sr-only" role="status">Loading album…</p>
+    return (
+      <div className="album-loading-state" role="status">
+        <LoaderCircle className="spin" size={40} strokeWidth={2} aria-hidden="true" />
+        <span className="sr-only">Loading album…</span>
+      </div>
+    )
   }
 
   if (library.albumRequiresLogin) {

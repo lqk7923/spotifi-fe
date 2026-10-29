@@ -16,6 +16,8 @@ export default function MusicApp({ albumId, page: Page }) {
   const { status } = useSyncExternalStore(auth.subscribe, auth.getSnapshot)
   const authenticated = status === 'authenticated'
   const [listenPrompt, setListenPrompt] = useState(null)
+  const [guestVolume, setGuestVolume] = useState(0.7)
+  const [guestMuted, setGuestMuted] = useState(false)
   const requestLogin = useCallback(track => setListenPrompt({ track }), [])
   const musicLibrary = useMusicLibrary(albumId, requestLogin)
   const layout = useMusicLayout()
@@ -42,17 +44,16 @@ export default function MusicApp({ albumId, page: Page }) {
     <>
       <MusicLayout
         layout={layout}
-        hasCurrentTrack={!!player.currentTrack}
         topBar={<TopBar search={library.search} onSearchChange={library.setSearch} searchRef={searchRef} onHome={showHome} />}
         leftSidebar={(
           <LibrarySidebar library={library} onSearch={focusSearch} onLibrary={focusLibrary}
             collapsed={layout.sidebarCollapsed} compact={layout.isMobile} onToggleCollapse={layout.toggleLibrary} />
         )}
         rightSidebar={(
-          <QueueSidebar tracks={library.collectionTracks} player={player} collapsed={layout.queueCollapsed}
+          <QueueSidebar tracks={player.tracks} player={player} collapsed={layout.queueCollapsed}
             onCollapse={layout.collapseQueue} onExpand={layout.expandQueue} onSearch={focusSearch} />
         )}
-        bottomBar={player.currentTrack && (
+        bottomBar={(
           <BottomBar player={player} library={library} queueOpen={!layout.queueCollapsed} onToggleQueue={layout.toggleQueue} />
         )}
       >
@@ -63,6 +64,7 @@ export default function MusicApp({ albumId, page: Page }) {
   )
 
   return authenticated
-    ? <AuthenticatedPlayer tracks={musicLibrary.collectionTracks}>{renderPage}</AuthenticatedPlayer>
-    : renderPage(createGuestPlayer(musicLibrary.collectionTracks, requestLogin))
+    ? <AuthenticatedPlayer tracks={musicLibrary.collectionTracks} loading={musicLibrary.loading} error={musicLibrary.error}>{renderPage}</AuthenticatedPlayer>
+    : renderPage({ ...createGuestPlayer(musicLibrary.collectionTracks, requestLogin),
+      volume: guestVolume, setVolume: setGuestVolume, isMuted: guestMuted, setIsMuted: setGuestMuted })
 }

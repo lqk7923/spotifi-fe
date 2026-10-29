@@ -5,7 +5,10 @@ Built with Vite, Tailwind CSS, daisyUI, and Lucide React. Visitors can browse th
 catalog and artwork; Keycloak login is required to open album details, listen, or save likes.
 Albums have dedicated pages at `/album/{id}`. Click the Spotifi logo to return
 to Home; browser Back/Forward also works. The old `/home` URL redirects to `/`.
-The player remains mounted when navigating between Home and an album.
+The player bar stays visible, including before a track is selected. When an album
+loads or cannot be found, only the main panel changes; navigation, sidebars and
+the player remain visible. Existing playback and queue controls remain available
+while another album is loading or unavailable.
 Album IDs are URL-decoded without UUID validation or case conversion; the backend validates their format and existence.
 
 On mobile (up to 767px wide, or phone-sized landscape windows), the left library stays visible as a 64px cover/icon rail and the right queue is hidden.
@@ -55,9 +58,9 @@ public BE root for static hosting. Missing Keycloak settings display a configura
 error and prevent protected API requests; authentication cannot be bypassed by
 omitting settings.
 
-The app shows the Spotify loading screen while initializing `keycloak-js` with
-`check-sso`, Authorization Code Flow and PKCE S256. Home mounts after the session
-check finishes, so returning users never briefly see guest sign-in controls. The public
+The app renders its layout while initializing `keycloak-js` with
+`check-sso`, Authorization Code Flow and PKCE S256. Album pages show a loading
+indicator inside the main panel until the session and album requests finish. The public
 `silent-check-sso.html` callback checks an existing session without navigating
 away from Home. Silent-check fallback redirects are disabled; browsers that block
 third-party cookies let the visitor sign in explicitly instead. Login and account
@@ -65,7 +68,7 @@ creation are hosted by Keycloak. Enable **Realm settings > Login > User registra
 so the Keycloak login page exposes its registration link. Guests see **Sign up**
 and a white **Log in** button at the top right. Selecting a track opens a sign-in
 dialog with its artwork; no audio element or preloader is mounted for guests.
-The Spotify loading screen also appears during an explicit login/register redirect.
+The fullscreen Spotify loading screen appears only during an explicit login/register redirect.
 Passwords are
 never collected by this app. Access and refresh tokens stay in SDK memory and
 are never written to localStorage, sessionStorage, or Cache Storage.

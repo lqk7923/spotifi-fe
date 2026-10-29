@@ -44,13 +44,9 @@
     font-size: 12px;
   }
 
-  .music-app:not(.playback-idle) {
+  .music-app {
     --player-height: calc(124px + env(safe-area-inset-bottom, 0px));
     --player-gap: 4px;
-  }
-
-  .music-app.playback-idle {
-    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
   }
 
   .queue-panel, .sidebar-resizer, .player-queue-toggle {
@@ -516,7 +512,7 @@
 }
 
 @media (max-width: 1000px) and (max-height: 500px) and (orientation: landscape) {
-  .music-app:not(.playback-idle) {
+  .music-app {
     --player-height: calc(80px + env(safe-area-inset-bottom, 0px));
   }
 

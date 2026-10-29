@@ -2,11 +2,14 @@
 export function createGuestPlayer(tracks, requestLogin) {
   const prompt = track => requestLogin(track || tracks[0] || null)
   return {
-    currentTrack: null, isPlaying: false, isLoading: false, error: '',
-    position: 0, duration: 0, shuffle: false,
+    tracks, currentTrack: null, isPlaying: false, isLoading: false, error: '',
+    position: 0, duration: 0, shuffle: false, repeat: false,
     startTrack: prompt,
     selectTrack: prompt,
     togglePlayback: () => prompt(),
     setShuffle: () => prompt(),
+    setRepeat: () => prompt(),
+    skip: () => prompt(),
+    seek: () => {},
   }
 }

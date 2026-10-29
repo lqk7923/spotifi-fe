@@ -34,6 +34,18 @@
   background: var(--panel-background);
 }
 
+.album-loading .main-page {
+  display: grid;
+  place-items: center;
+}
+
+.album-loading-state {
+  display: grid;
+  place-items: center;
+  min-height: 300px;
+  color: var(--green);
+}
+
 .main-content.album-unavailable {
   background: #121212;
 }

@@ -10,7 +10,7 @@ const file = Uint8Array.from({ length: 24 }, (_, index) => index)
 const source = () => ({
   path: '/__audio_preload__/test', prefix: file.slice(0, 8).buffer,
   total: file.length, type: 'audio/wav', url: 'https://r2.example/old',
-  signedAt: Date.now(), signingEndpoint: 'https://app.example/track/track',
+  signedAt: Date.now(), signingEndpoint: 'https://app.example/tracks/track/playback',
 })
 const request = (range) => new Request('https://app.example/__audio_preload__/test', {
   headers: range ? { Range: range } : {},
@@ -136,6 +136,28 @@ test('retries a rejected signature once and keeps the continuation offset', asyn
   assert.deepEqual(calls, [current.url, 'page-signing', 'https://r2.example/retry'])
 })
 
+test('worker honors explicit expiration across short lifetimes and renewed signatures', async () => {
+  let now = 1_000_000
+  mock.method(Date, 'now', () => now)
+  let renewals = 0
+  const current = { ...source(), path: '/short-ttl', signedAt: now - 2000, expiresAt: now - 1000,
+    refreshUrl: async () => {
+      renewals++
+      return { url: 'https://r2.example/short-ttl', expiresAt: now + 1000 }
+    } }
+  mock.method(globalThis, 'fetch', async url => {
+    assert.equal(url, 'https://r2.example/short-ttl')
+    return new Response(file.slice(8), { status: 206, headers: { 'Content-Range': 'bytes 8-23/24' } })
+  })
+  await bytes(createAudioResponse(request(), current))
+  now += 500
+  await bytes(createAudioResponse(request(), current))
+  assert.equal(renewals, 1)
+  now += 500
+  await bytes(createAudioResponse(request(), current))
+  assert.equal(renewals, 2)
+})
+
 test('rejects a continuation that ignores Range or returns a different object size', async () => {
   for (const response of [new Response(file), new Response(file.slice(8), {
     status: 206, headers: { 'Content-Range': 'bytes 8-23/25' },
@@ -228,8 +250,8 @@ test('selection renews an expired preload URL through the JSON signing API', asy
     url: 'https://r2.example/expired', signedAt: Date.now() - 120_000,
   }
   mock.method(globalThis, 'fetch', async (url) => {
-    assert.equal(url, '/track/track')
-    return Response.json({ trackPresignedLink: 'https://r2.example/renewed' })
+    assert.equal(url, '/tracks/track/playback')
+    return Response.json({ data: { trackId: 'track', audioUrl: 'https://r2.example/renewed', expiresAt: '2099-10-29T12:00:00Z' } })
   })
   const result = await preloader.source({ trackId: 'track' }, new AbortController().signal)
   assert.equal(result.url, 'https://r2.example/renewed')
@@ -238,10 +260,10 @@ test('selection renews an expired preload URL through the JSON signing API', asy
 })
 
 test('worker refuses invalid JSON signing payloads before fetching audio', async () => {
-  for (const [index, body] of [null, {}, { trackPresignedLink: 123 },
-    { trackPresignedLink: 'javascript:alert(1)' }].entries()) {
+  for (const [index, body] of [null, {}, { url: 123 },
+    { url: 'javascript:alert(1)' }].entries()) {
     const expired = { ...source(), path: `/invalid-signature-${index}`, signedAt: Date.now() - 120_000,
-      refreshUrl: async () => body?.trackPresignedLink }
+      refreshUrl: async () => body?.url }
     mock.method(globalThis, 'fetch', () => assert.fail('Invalid media URL must not be fetched'))
     await assert.rejects(bytes(createAudioResponse(request(), expired)), /Invalid audio URL/)
     mock.restoreAll()
@@ -325,8 +347,8 @@ test('worker requests URL renewal from the owning page without sending a token o
     } },
   } })
   try {
-    assert.equal(await requestAudioSignature({ path: '/__audio_preload__/session', owner: 'owning-tab' }),
-      'https://r2.example/renewed?signature=abc')
+    assert.deepEqual(await requestAudioSignature({ path: '/__audio_preload__/session', owner: 'owning-tab' }),
+      { url: 'https://r2.example/renewed?signature=abc' })
     assert.deepEqual(messages, [{ type: 'refresh-audio-url', path: '/__audio_preload__/session' }])
   } finally {
     if (originalSelf) Object.defineProperty(globalThis, 'self', originalSelf)
@@ -352,9 +374,9 @@ test('page renews worker playback through authenticated BE and removes renewal a
   } })
   mock.method(globalThis, 'fetch', async (url, options) => {
     requests.push({ url, options })
-    if (url === '/track/worker-track') {
+    if (url === '/tracks/worker-track/playback') {
       assert.equal(options.headers.Authorization, 'Bearer test-access-token')
-      return Response.json({ trackPresignedLink: 'https://r2.example/signed' })
+      return Response.json({ data: { trackId: 'worker-track', audioUrl: 'https://r2.example/signed', expiresAt: '2099-10-29T12:00:00Z' } })
     }
     assert.equal(url, 'https://r2.example/signed')
     assert.equal(options.headers.Authorization, undefined)
@@ -372,7 +394,10 @@ test('page renews worker playback through authenticated BE and removes renewal a
     await preloader.next.ready
     const playback = await preloader.source({ trackId: 'worker-track' }, new AbortController().signal)
     assert.equal(playback.cached, true)
-    assert.deepEqual(await renew(playback.url), { url: 'https://r2.example/signed' })
+    const renewal = await renew(playback.url)
+    assert.equal(renewal.url, 'https://r2.example/signed')
+    assert.equal(renewal.expiresAt, Date.parse('2099-10-29T12:00:00Z'))
+    assert.ok(Date.now() - renewal.signedAt < 1000)
     assert.equal(requests.length, 3)
     assert.equal(JSON.stringify(messages).includes('test-access-token'), false)
     preloader.release()

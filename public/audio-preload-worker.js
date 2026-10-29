@@ -23,7 +23,7 @@ export async function requestAudioSignature(source) {
     channel.port1.onmessage = ({ data }) => {
       finish()
       if (data.error) reject(new Error(data.error))
-      else resolve(data.url)
+      else resolve(data)
     }
     try {
       owner.postMessage({ type: 'refresh-audio-url', path: source.path }, [channel.port2])
@@ -36,17 +36,24 @@ export async function requestAudioSignature(source) {
 
 async function freshSignature(source, force = false) {
   let current = signatures.get(source.path)
-  if (!force && current && Date.now() - current.signedAt < 110_000) return current.url
+  const fresh = signature => {
+    if (!Number.isFinite(signature.expiresAt)) return Date.now() - signature.signedAt < 110_000
+    const margin = Math.min(10_000, Math.max(0, signature.expiresAt - signature.signedAt) / 10)
+    return Date.now() < signature.expiresAt - margin
+  }
+  if (!force && current && fresh(current)) return current.url
   if (current?.pending) return current.pending
-  if (!force && !current && Date.now() - source.signedAt < 110_000) return source.url
+  if (!force && !current && fresh(source)) return source.url
   current ||= {}
   current.pending = (async () => {
     const value = await (source.refreshUrl || requestAudioSignature)(source)
-    if (typeof value !== 'string') throw new Error('Invalid audio URL')
-    const url = value.trim()
+    const target = typeof value === 'string' ? value : value?.url
+    if (typeof target !== 'string') throw new Error('Invalid audio URL')
+    const url = target.trim()
     if (!['http:', 'https:'].includes(new URL(url).protocol)) throw new Error('Invalid audio URL')
     current.url = url
     current.signedAt = Date.now()
+    current.expiresAt = typeof value === 'string' ? undefined : value.expiresAt
     return url
   })().finally(() => { delete current.pending })
   signatures.set(source.path, current)
@@ -157,6 +164,7 @@ if (typeof self !== 'undefined' && self.clients) {
           'X-Audio-Total': String(data.total),
           'X-Audio-Url': data.url,
           'X-Audio-Signed-At': String(data.signedAt),
+          'X-Audio-Expires-At': String(data.expiresAt ?? ''),
         } }))
       } else if (data.type === 'release') {
         const stored = await cache.match(key)
@@ -188,6 +196,7 @@ if (typeof self !== 'undefined' && self.clients) {
         type: stored.headers.get('X-Audio-Type'),
         url: stored.headers.get('X-Audio-Url'),
         signedAt: Number(stored.headers.get('X-Audio-Signed-At')),
+        expiresAt: Number(stored.headers.get('X-Audio-Expires-At')) || undefined,
         owner: stored.headers.get('X-Audio-Owner'),
       })
     })().catch(() => new Response(null, { status: 502 })))

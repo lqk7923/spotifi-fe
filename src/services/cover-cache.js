@@ -57,8 +57,16 @@ export function createCoverCache({
     }
 
     const download = target => fetcher(target, { signal: AbortSignal.timeout(15000) })
+    let renewed = false
+    const expiresAt = Date.parse(item.coverExpiresAt)
+    if (Number.isFinite(expiresAt) && Date.now() >= expiresAt - 250) {
+      url = await renew(item)
+      if (!url) throw new Error('No album cover is available.')
+      renewed = true
+    }
     let response = await download(url)
-    if (response.status === 401 || response.status === 403) {
+    if (!renewed && (response.status === 401 || response.status === 403)) {
+      await response.body?.cancel()
       const refreshed = await renew(item)
       if (!refreshed) throw new Error('No album cover is available.')
       response = await download(refreshed)

@@ -1,9 +1,9 @@
-import { getPlaybackUrl } from '../../../services/music-api.js'
+import { getPlayback } from '../../../services/music-api.js'
 import { trackKey } from '../../../lib/tracks.js'
+import { isSignedUrlFresh, playbackSource } from '../../../lib/signed-url.js'
 
 // Decimal MB: preload bytes 0..2,499,999, then continue at byte 2,500,000.
 export const PRELOAD_BYTES = 2_500_000
-export const SIGNED_URL_MAX_AGE = 110_000
 let workerReady
 const renewals = new Map()
 let listeningForRenewals = false
@@ -19,7 +19,7 @@ function listenForRenewals() {
       if (!renew) throw new Error('Playback session has ended')
       // The page owns Keycloak and signs through the shared authenticated API client.
       // Never transfer access/refresh tokens to the worker or its persistent cache.
-      port.postMessage({ url: await renew() })
+      port.postMessage(await renew())
     } catch (cause) {
       port.postMessage({ error: cause.message })
     } finally {
@@ -126,13 +126,14 @@ export async function fetchPrefix(url, signal) {
 async function storePrefix(entry, track, signal, requestPlaybackUrl) {
   const base = import.meta.env?.BASE_URL || '/'
   const path = `${base}__audio_preload__/${crypto.randomUUID()}`
-  renewals.set(path, () => requestPlaybackUrl(track, signal))
+  renewals.set(path, async () => playbackSource(await requestPlaybackUrl(track, signal)))
   try {
     await send(entry.worker, {
       type: 'store',
       path,
       url: entry.url,
       signedAt: entry.signedAt,
+      expiresAt: entry.expiresAt,
       ...entry.data,
     }, [entry.data.prefix])
     signal.throwIfAborted()
@@ -146,7 +147,7 @@ async function storePrefix(entry, track, signal, requestPlaybackUrl) {
 
 // One upcoming track in memory; one playing track in the worker's bounded cache.
 export class AudioPreloader {
-  constructor({ enabled = true, requestPlaybackUrl = getPlaybackUrl } = {}) {
+  constructor({ enabled = true, requestPlaybackUrl = getPlayback } = {}) {
     this.enabled = enabled
     this.next = null
     this.active = null
@@ -163,8 +164,7 @@ export class AudioPreloader {
     entry.ready = (async () => {
       entry.worker = await getWorker()
       if (!entry.worker || entry.controller.signal.aborted) return
-      entry.url = await this.requestPlaybackUrl(track, entry.controller.signal)
-      entry.signedAt = Date.now()
+      Object.assign(entry, playbackSource(await this.requestPlaybackUrl(track, entry.controller.signal)))
       entry.data = await fetchPrefix(entry.url, entry.controller.signal)
     })().catch(() => { /* Optional preload must never interrupt current playback. */ })
   }
@@ -182,7 +182,7 @@ export class AudioPreloader {
         signal.throwIfAborted()
         if (entry.data) {
           this.active = await storePrefix(entry, track, signal, this.requestPlaybackUrl)
-          return { url: this.active.path, signedAt: entry.signedAt, cached: true }
+          return { url: this.active.path, signedAt: entry.signedAt, expiresAt: entry.expiresAt, cached: true }
         }
       } catch (cause) {
         signal.throwIfAborted()
@@ -191,13 +191,13 @@ export class AudioPreloader {
       } finally {
         signal.removeEventListener('abort', abort)
       }
-      if (entry.url && Date.now() - entry.signedAt < SIGNED_URL_MAX_AGE) {
-        return { url: entry.url, signedAt: entry.signedAt, cached: false }
+      if (entry.url && isSignedUrlFresh(entry)) {
+        return { url: entry.url, signedAt: entry.signedAt, expiresAt: entry.expiresAt, cached: false }
       }
     }
     if (this.next?.key !== trackKey(track) || bypass) this.preload(null)
-    const url = await this.requestPlaybackUrl(track, signal)
-    return { url, signedAt: Date.now(), cached: false }
+    const source = playbackSource(await this.requestPlaybackUrl(track, signal))
+    return { ...source, cached: false }
   }
 
   release() {

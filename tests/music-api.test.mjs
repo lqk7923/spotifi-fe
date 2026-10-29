@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { beforeEach, afterEach, test, mock } from 'node:test'
 import { auth } from '../src/services/keycloak.js'
-import { getAlbum, getAlbumTracks, getTrack, getPlaybackUrl, getSigningEndpoint, getTrackLinks, getTracks } from '../src/services/music-api.js'
+import { getAlbum, getAlbumTracks, getTrack, getPlaybackUrl, getSigningEndpoint, getPlayback, getTracks } from '../src/services/music-api.js'
 import { getAlbumQueue, trackAuthor, trackDurationSeconds, trackLabel } from '../src/lib/tracks.js'
 
 afterEach(() => mock.restoreAll())
@@ -104,9 +104,9 @@ test('track detail reads metadata from data rather than treating it as audio sig
 
 test('reads signed URLs from JSON and escapes the track ID without a bucket', async () => {
   mock.method(globalThis, 'fetch', async (url, options) => {
-    assert.equal(url, '/track/track%2Fid')
+    assert.equal(url, '/tracks/track%2Fid/playback')
     assert.equal(options.cache, 'no-store')
-    return Response.json({ trackPresignedLink: ' https://r2.example/audio?X-Amz-Signature=abc\n' })
+    return Response.json({ data: { trackId: 'track/id', audioUrl: ' https://r2.example/audio?X-Amz-Signature=abc\n', expiresAt: '2099-10-29T12:00:00Z' } })
   })
   assert.equal(await getPlaybackUrl({ trackId: 'track/id' }),
     'https://r2.example/audio?X-Amz-Signature=abc')
@@ -120,8 +120,9 @@ test('does not depend on the backend error body contract', async () => {
 })
 
 test('rejects missing or unsafe audio URLs', async () => {
-  for (const body of [null, {}, { trackPresignedLink: 123 },
-    ...['', 'not a URL', 'javascript:alert(1)', 'data:audio/wav;base64,abc'].map((trackPresignedLink) => ({ trackPresignedLink }))]) {
+  for (const body of [null, {}, { data: { audioUrl: 123 } },
+    ...['', 'not a URL', 'javascript:alert(1)', 'data:audio/wav;base64,abc'].map(audioUrl => ({ data: { trackId: track.trackId, audioUrl, expiresAt: '2099-10-29T12:00:00Z' } })),
+    ...[undefined, null, 'invalid', 123].map(expiresAt => ({ data: { trackId: track.trackId, audioUrl: 'https://r2.example/audio', expiresAt } }))]) {
     mock.method(globalThis, 'fetch', async () => Response.json(body))
     await assert.rejects(getPlaybackUrl(track), /valid audio URL/)
     mock.restoreAll()
@@ -142,13 +143,13 @@ test('uses track metadata and converts milliseconds into player seconds', () => 
   assert.equal(trackDurationSeconds({}), null)
   assert.equal(trackLabel({ ...track, title: ' ' }), 'Track 550e8400')
   assert.equal(trackAuthor({ ...track, artist: null }), 'Unknown artist')
-  assert.equal(getSigningEndpoint({ trackId: 'track/id' }), '/track/track%2Fid')
+  assert.equal(getSigningEndpoint({ trackId: 'track/id' }), '/tracks/track%2Fid/playback')
 })
 
-test('track detail exposes both signed audio and cover links', async () => {
-  const links = { trackPresignedLink: 'https://r2.example/audio', coverPresignedLink: track.coverUrl }
-  mock.method(globalThis, 'fetch', async () => Response.json(links))
-  assert.deepEqual(await getTrackLinks(track), links)
+test('playback unwraps audioUrl and expiresAt without a standalone cover', async () => {
+  const links = { trackId: track.trackId, audioUrl: 'https://r2.example/audio', expiresAt: '2099-10-29T12:00:00Z' }
+  mock.method(globalThis, 'fetch', async () => Response.json({ data: links }))
+  assert.deepEqual(await getPlayback(track), links)
 })
 
 test('forwards request cancellation when a track is superseded', async () => {
@@ -159,4 +160,13 @@ test('forwards request cancellation when a track is superseded', async () => {
     throw signal.reason
   })
   await assert.rejects(getPlaybackUrl(track, controller.signal), { name: 'AbortError' })
+})
+
+test('playback can request metadata explicitly through include=metadata', async () => {
+  mock.method(globalThis, 'fetch', async url => {
+    assert.equal(url, '/tracks/' + track.trackId + '/playback?include=metadata')
+    return Response.json({ data: { trackId: track.trackId, audioUrl: 'https://r2.example/audio',
+      expiresAt: '2099-10-29T12:00:00Z', metadata: track } })
+  })
+  assert.deepEqual((await getPlayback(track, undefined, { includeMetadata: true })).metadata, track)
 })

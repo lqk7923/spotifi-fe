@@ -91,6 +91,37 @@ test('blocked storage still displays covers and reuses the memory cache', async 
   assert.equal(downloads, 1)
 })
 
+test('uncached expired covers renew before downloading while cached bytes remain reusable', async () => {
+  const requests = []
+  let renewals = 0
+  const expired = { ...item, coverExpiresAt: '2000-01-01T00:00:00Z' }
+  const cache = createCoverCache({ storage: null,
+    fetcher: async url => { requests.push(url); return imageResponse() },
+    renew: async () => { renewals++; return 'https://r2.example/fresh.png' },
+  })
+  await cache.load(expired)
+  await cache.load(expired)
+  assert.deepEqual(requests, ['https://r2.example/fresh.png'])
+  assert.equal(renewals, 1)
+})
+
+test('guests renew expired covers through the public catalog without accessing protected albums', async () => {
+  mock.method(auth, 'getSnapshot', () => ({ status: 'signed-out' }))
+  mock.method(auth, 'getAccessToken', () => assert.fail('Guest cover renewal must not ask for a token'))
+  const requests = []
+  mock.method(globalThis, 'fetch', async url => {
+    requests.push(url)
+    if (url === '/tracks?page=0&size=20') return Response.json({
+      data: [{ ...item, title: 'Track', artist: 'Artist', albumTitle: 'Album', durationMs: 1000, coverUrl: 'https://r2.example/fresh.png' }],
+      pagination: { page: 0, size: 20, totalElements: 1, totalPages: 1 },
+    })
+    assert.equal(url, 'https://r2.example/fresh.png')
+    return imageResponse()
+  })
+  await createCoverCache({ storage: null }).load({ ...item, coverExpiresAt: '2000-01-01T00:00:00Z' })
+  assert.deepEqual(requests, ['/tracks?page=0&size=20', 'https://r2.example/fresh.png'])
+})
+
 test('failed downloads are not cached, can retry, and renewal cannot loop', async () => {
   let downloads = 0
   const cache = createCoverCache({ storage: null,

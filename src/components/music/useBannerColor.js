@@ -7,18 +7,19 @@ export default function useBannerColor(item, defaultColor = '#242424') {
   const key = url ? coverCacheKey(url) : null
   const trackId = item?.trackId
   const albumId = item?.albumId
+  const coverExpiresAt = item?.coverExpiresAt
   const [result, setResult] = useState(null)
 
   useEffect(() => {
     if (!url) return
     let active = true
-    coverColorCache.load({ coverUrl: url, trackId, albumId }).then(color => {
+    coverColorCache.load({ coverUrl: url, trackId, albumId, coverExpiresAt }).then(color => {
       if (active && color) setResult({ key, color })
     }).catch(() => {
       // Keep the neutral background if the cover cannot be decoded.
     })
     return () => { active = false }
-  }, [url, key, trackId, albumId])
+  }, [url, key, trackId, albumId, coverExpiresAt])
 
   return (key && result?.key === key ? result.color : coverColorCache.peek(item)) || defaultColor
 }

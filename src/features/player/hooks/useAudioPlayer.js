@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { errorMessage } from '../../../services/music-api.js'
 import { trackDurationSeconds, trackKey } from '../../../lib/tracks.js'
-import { AudioPreloader, SIGNED_URL_MAX_AGE } from '../lib/audio-preload.js'
+import { AudioPreloader } from '../lib/audio-preload.js'
+import { isSignedUrlFresh } from '../../../lib/signed-url.js'
 
 const preloadEnabled = import.meta.env?.VITE_AUDIO_PRELOAD_ENABLED?.trim().toLowerCase() !== 'false'
 
@@ -96,6 +97,7 @@ export default function useAudioPlayer(tracks, audioRef) {
       const source = await preloadRef.current.source(track, controller.signal, automaticRetry)
       if (sequence !== sequenceRef.current) return
       sessionRef.current.signedAt = source.signedAt
+      sessionRef.current.expiresAt = source.expiresAt
       sessionRef.current.cached = source.cached
       audio.src = source.url
       audio.load()
@@ -137,7 +139,7 @@ export default function useAudioPlayer(tracks, audioRef) {
       return
     }
     const session = sessionRef.current
-    const expired = !session.cached && Date.now() - session.signedAt >= SIGNED_URL_MAX_AGE
+    const expired = !session.cached && !isSignedUrlFresh(session)
     if (error || !audio.getAttribute('src') || expired || audio.ended) {
       await startTrack(currentTrack, audio.ended ? 0 : audio.currentTime)
       return

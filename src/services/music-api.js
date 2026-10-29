@@ -55,36 +55,31 @@ export async function getTrack(trackId, signal) {
   return body.data
 }
 
-export async function getTrackLinks(track, signal) {
+export async function getPlayback(track, signal, { includeMetadata = false } = {}) {
   const response = await request(
-    `/track/${encodeURIComponent(track.trackId)}`,
+    `/tracks/${encodeURIComponent(track.trackId)}/playback${includeMetadata ? '?include=metadata' : ''}`,
     signal,
   )
-  return response.json()
-}
-
-export async function getPlaybackUrl(track, signal) {
-  const data = await getTrackLinks(track, signal).catch(error => {
-    if (error instanceof SyntaxError) throw new Error('The music server did not return a valid audio URL.')
-    throw error
-  })
-  let url
-  let parsed
+  const body = await response.json().catch(() => null)
+  const data = body?.data
   try {
-    if (typeof data?.trackPresignedLink !== 'string') throw new Error('Missing audio URL')
-    url = data.trackPresignedLink.trim()
-    parsed = new URL(url)
+    if (typeof data?.audioUrl !== 'string' || typeof data?.trackId !== 'string'
+      || typeof data?.expiresAt !== 'string' || !Number.isFinite(Date.parse(data.expiresAt))) throw new Error()
+    const audioUrl = data.audioUrl.trim()
+    if (!['https:', 'http:'].includes(new URL(audioUrl).protocol)) throw new Error()
+    if (includeMetadata && !isValidTrack(data.metadata)) throw new Error()
+    return { ...data, audioUrl }
   } catch {
     throw new Error('The music server did not return a valid audio URL.')
   }
-  if (!['https:', 'http:'].includes(parsed.protocol)) {
-    throw new Error('The music server did not return a valid audio URL.')
-  }
-  return url
+}
+
+export async function getPlaybackUrl(track, signal) {
+  return (await getPlayback(track, signal)).audioUrl
 }
 
 export function getSigningEndpoint(track) {
-  return `${apiBase}/track/${encodeURIComponent(track.trackId)}`
+  return `${apiBase}/tracks/${encodeURIComponent(track.trackId)}/playback`
 }
 
 export function errorMessage(error, fallback) {

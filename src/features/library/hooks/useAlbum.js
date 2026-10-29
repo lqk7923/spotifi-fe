@@ -20,7 +20,7 @@ export default function useAlbum(albumId) {
       })
       .catch(cause => {
         if (!controller.signal.aborted) {
-          setState({ albumId, reload, status, album: null, tracks: [], notFound: cause.status === 404,
+          setState({ albumId, reload, status, album: null, tracks: [], notFound: [400, 404].includes(cause.status),
             error: errorMessage(cause, 'Could not load this album.') })
         }
       })

@@ -27,7 +27,7 @@ function AlbumContent({ library, player, libraryRef }) {
       <section className="album-not-found" aria-labelledby="album-not-found-title" role="status">
         <CircleAlert size={72} strokeWidth={2} aria-hidden="true" />
         <h1 id="album-not-found-title">Could not find that album</h1>
-        <p>Search for something else?</p>
+        <p>Try searching for another song?</p>
       </section>
     )
   }

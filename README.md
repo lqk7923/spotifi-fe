@@ -163,7 +163,7 @@ the public list omit the album artist because that field is available only from
 album details. Missing covers have null URL/expiration fields.
 
 Errors use `{ code, message }`, without an error wrapper; the client preserves
-both fields and HTTP status. Album 404s display "Could not find that album";
+both fields and HTTP status. Album 400/404 errors display "Could not find that album";
 other failures retain the retry state. Audio and cover URL expirations are
 independent UTC timestamps. The app renews audio before `expiresAt`, including
 short lifetimes configured through backend `MEDIA_URL_EXPIRATION`; uncached

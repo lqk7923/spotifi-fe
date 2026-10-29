@@ -12,6 +12,16 @@ function AlbumContent({ library, player, libraryRef }) {
     return <p className="sr-only" role="status">Loading album…</p>
   }
 
+  if (library.albumRequiresLogin) {
+    return (
+      <section className="album-not-found" role="status">
+        <h1>Log in to view this album</h1>
+        <p>Sign in to see the full album and its tracks.</p>
+        <button className="btn" onClick={library.requestAlbumLogin}>Log in</button>
+      </section>
+    )
+  }
+
   if (albumNotFound) {
     return (
       <section className="album-not-found" aria-labelledby="album-not-found-title" role="status">

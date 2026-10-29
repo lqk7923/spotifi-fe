@@ -12,7 +12,7 @@ export default function useCover(item) {
     if (!url) return
     let active = true
     let objectUrl
-    coverCache.load({ coverPresignedUrl: url, trackId, albumId }).then(async blob => {
+    coverCache.load({ coverUrl: url, trackId, albumId }).then(async blob => {
       if (!active) return
       if (!blob) {
         setImage({ identity, src: null })

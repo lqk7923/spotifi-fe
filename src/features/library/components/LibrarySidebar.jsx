@@ -55,9 +55,9 @@ export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed
               key={album.albumId}
               track={album}
               current={selectedAlbum?.albumId === album.albumId}
-              title={album.albumTitle || 'Untitled album'}
-              subtitle={`Album${album.author?.trim() ? ` • ${album.author.trim()}` : ''}`}
-              label={`${album.albumTitle || 'Untitled album'}${album.author ? ` by ${album.author}` : ''}`}
+              title={album.title || 'Untitled album'}
+              subtitle={`Album${album.artist?.trim() ? ` • ${album.artist.trim()}` : ''}`}
+              label={`${album.title || 'Untitled album'}${album.artist ? ` by ${album.artist}` : ''}`}
               href={albumPath(album.albumId)}
             />
           ))}

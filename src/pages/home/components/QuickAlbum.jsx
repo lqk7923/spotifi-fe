@@ -16,9 +16,9 @@ export default function QuickAlbum({ album, tracks, player, onAlbumHover }) {
     <div className={`quick-album${isPlaying ? ' is-playing' : ''}`}
       onPointerEnter={() => onAlbumHover?.(album)} onFocus={() => onAlbumHover?.(album)}>
       <AppLink href={albumPath(album.albumId)} className="quick-track"
-        aria-label={`Open album ${album.albumTitle}`} title={album.albumTitle}>
+        aria-label={`Open album ${album.title}`} title={album.title}>
         <Artwork track={album} small />
-        <span>{album.albumTitle}</span>
+        <span>{album.title}</span>
       </AppLink>
       {isPlaying && (
         <div className="quick-album-playing" role="img" aria-label="Now playing">
@@ -33,7 +33,7 @@ export default function QuickAlbum({ album, tracks, player, onAlbumHover }) {
         onFocus={() => setTooltipDismissed(false)}
         onKeyDown={event => { if (event.key === 'Escape') setTooltipDismissed(true) }}>
         <button type="button" className="quick-album-play"
-          aria-label={`${action} album ${album.albumTitle}`} aria-describedby={tooltipId}
+          aria-label={`${action} album ${album.title}`} aria-describedby={tooltipId}
           disabled={!firstTrack}
           onClick={() => { void (selected ? player.togglePlayback() : player.startTrack(firstTrack)) }}>
           <TrackPlaybackIcon selected={selected} player={player} size={22} />

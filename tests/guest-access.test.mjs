@@ -80,8 +80,8 @@ test('audio signing still rejects guests before calling the backend', async () =
 })
 
 test('all guest play controls request login with the selected cover and never select a playing track', () => {
-  const first = { trackId: 'first', coverPresignedUrl: 'https://r2.example/first.jpg' }
-  const selected = { trackId: 'selected', coverPresignedUrl: 'https://r2.example/selected.jpg' }
+  const first = { trackId: 'first', coverUrl: 'https://r2.example/first.jpg' }
+  const selected = { trackId: 'selected', coverUrl: 'https://r2.example/selected.jpg' }
   const prompts = []
   const player = createGuestPlayer([first, selected], track => prompts.push(track))
   player.startTrack(selected)

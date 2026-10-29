@@ -12,7 +12,7 @@ export default function useBannerColor(item, defaultColor = '#242424') {
   useEffect(() => {
     if (!url) return
     let active = true
-    coverColorCache.load({ coverPresignedUrl: url, trackId, albumId }).then(color => {
+    coverColorCache.load({ coverUrl: url, trackId, albumId }).then(color => {
       if (active && color) setResult({ key, color })
     }).catch(() => {
       // Keep the neutral background if the cover cannot be decoded.

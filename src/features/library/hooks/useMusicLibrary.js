@@ -22,6 +22,8 @@ export default function useMusicLibrary(albumId, onRequireLogin) {
     loading: albumId ? album.loading : catalog.loading,
     error: albumId ? album.error : catalog.error,
     albumNotFound: album.notFound,
+    albumRequiresLogin: album.requiresLogin,
+    requestAlbumLogin: () => onRequireLogin(selectedAlbum),
     refresh: albumId ? album.refresh : catalog.refresh,
     ...filters,
     isLiked, toggleLike, likedCount: tracks.filter(isLiked).length,

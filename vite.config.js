@@ -8,11 +8,11 @@ import benchmarkFixture from './benchmarks/fixture-plugin.js'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const proxy = {
-    '/track': {
+    '/tracks': {
       target: env.API_PROXY_TARGET || 'http://localhost:8080',
       changeOrigin: true,
     },
-    '^/album/[^/]+/tracks(?:\\?.*)?$': {
+    '/albums': {
       target: env.API_PROXY_TARGET || 'http://localhost:8080',
       changeOrigin: true,
     },

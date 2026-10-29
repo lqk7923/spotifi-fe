@@ -15,7 +15,7 @@ export default function AlbumActions({ library, player }) {
       <h2 id="library-title" className="sr-only">Tracks</h2>
       <button
         type="button" className="album-play"
-        aria-label={`${albumPlaying ? 'Pause' : 'Play'} album ${selectedAlbum.albumTitle || 'Album'}`}
+        aria-label={`${albumPlaying ? 'Pause' : 'Play'} album ${selectedAlbum.title || 'Album'}`}
         disabled={loading || !!error || !visibleTracks.length}
         onClick={() => {
           void (albumTrackSelected ? player.togglePlayback() : player.startTrack(visibleTracks[0]))

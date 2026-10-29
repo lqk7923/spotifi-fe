@@ -1,11 +1,12 @@
-import { getAlbumTracks } from './music-api.js'
+import { getAlbum, getTracks } from './music-api.js'
+import { auth } from './keycloak.js'
 
 const CACHE_NAME = 'music-covers-v1'
 const MAX_COVERS = 100
 const MAX_MEMORY_COVERS = 32
 
 export function coverUrl(item) {
-  const value = item?.albumCoverPresignedUrl || item?.coverPresignedUrl || item?.coverPresignedLink
+  const value = item?.coverUrl
   if (typeof value !== 'string') return null
   try {
     const url = new URL(value.trim())
@@ -27,7 +28,13 @@ export function coverCacheKey(url) {
 
 async function renewCover(item) {
   // Renew artwork via metadata, never through the audio-signing endpoint.
-  if (item.albumId) return coverUrl(await getAlbumTracks(item.albumId))
+  if (auth.getSnapshot().status === 'authenticated' && item.albumId) {
+    return coverUrl(await getAlbum(item.albumId))
+  }
+  // Guests can renew artwork only through the public track list.
+  const tracks = await getTracks()
+  const track = tracks.find(track => item.trackId ? track.trackId === item.trackId : track.albumId === item.albumId)
+  if (track) return coverUrl(track)
   return null
 }
 

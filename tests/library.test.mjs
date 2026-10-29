@@ -4,8 +4,8 @@ import { filterTracks, getAlbums, migrateLikes, trackKey } from '../src/lib/trac
 import { albumReleaseDate, greetingLabel, timeLabel } from '../src/lib/format.js'
 
 const tracks = [
-  { trackId: 'first', trackTitle: 'Industrial Drum', author: 'looplicator', trackDuration: 12000, albumId: 'album-1', albumTitle: 'Factory Sounds' },
-  { trackId: 'second', trackTitle: 'Night Air', author: 'another artist', trackDuration: 90500, albumId: 'album-2', albumTitle: 'Evening' },
+  { trackId: 'first', title: 'Industrial Drum', artist: 'looplicator', durationMs: 12000, albumId: 'album-1', albumTitle: 'Factory Sounds' },
+  { trackId: 'second', title: 'Night Air', artist: 'another artist', durationMs: 90500, albumId: 'album-2', albumTitle: 'Evening' },
 ]
 const filters = { likedOnly: false, likes: [], search: '' }
 
@@ -20,8 +20,8 @@ test('groups albums by identity even when titles are shared', () => {
   const duplicate = { ...tracks[0], trackId: 'third' }
   const sameTitle = { ...tracks[1], albumTitle: tracks[0].albumTitle }
   assert.deepEqual(getAlbums([tracks[0], duplicate, sameTitle]), [
-    { albumId: 'album-1', albumTitle: 'Factory Sounds', author: 'looplicator', albumCoverPresignedUrl: null },
-    { albumId: 'album-2', albumTitle: 'Factory Sounds', author: 'another artist', albumCoverPresignedUrl: null },
+    { albumId: 'album-1', title: 'Factory Sounds', coverUrl: null, coverExpiresAt: undefined },
+    { albumId: 'album-2', title: 'Factory Sounds', coverUrl: null, coverExpiresAt: undefined },
   ])
   assert.deepEqual(getAlbums([]), [])
 })
@@ -39,8 +39,8 @@ test('migrates saved likes from bucket/trackId and removes duplicates', () => {
 })
 
 test('album cards preserve a cover supplied by any track in the album', () => {
-  const result = getAlbums([{ ...tracks[0], coverPresignedUrl: 'https://r2.example/cover.jpg' }, tracks[0]])
-  assert.equal(result[0].albumCoverPresignedUrl, 'https://r2.example/cover.jpg')
+  const result = getAlbums([{ ...tracks[0], coverUrl: 'https://r2.example/cover.jpg' }, tracks[0]])
+  assert.equal(result[0].coverUrl, 'https://r2.example/cover.jpg')
 })
 
 test('release dates show a year and an English Month dd yyyy tooltip without timezone shifts', () => {

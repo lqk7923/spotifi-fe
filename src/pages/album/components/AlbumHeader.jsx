@@ -14,9 +14,9 @@ export default function AlbumHeader({ album, tracks }) {
         <Artwork track={album} />
         <div className="album-details">
           <p className="album-type">Album</p>
-          <h1 id="album-title">{album.albumTitle || 'Album'}</h1>
+          <h1 id="album-title">{album.title || 'Album'}</h1>
           <p className="album-meta">
-            {album.author && <><span className="album-author">{album.author}</span><span aria-hidden="true"> • </span></>}
+            {album.artist && <><span className="album-author">{album.artist}</span><span aria-hidden="true"> • </span></>}
             {release && <>
               <span className="album-release" data-dismissed={tooltipDismissed}
                 onMouseEnter={() => setTooltipDismissed(false)}

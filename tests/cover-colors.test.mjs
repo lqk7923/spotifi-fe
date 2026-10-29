@@ -5,7 +5,7 @@ import { createCoverColorCache } from '../src/services/cover-color-cache.js'
 
 const pixels = (...groups) => new Uint8ClampedArray(groups.flatMap(([count, rgba]) => Array.from({ length: count }, () => rgba).flat()))
 const channels = color => color.slice(1).match(/../g).map(hex => parseInt(hex, 16))
-const item = { albumId: 'album', albumCoverPresignedUrl: 'https://r2.example/cover.jpg?X-Amz-Signature=first' }
+const item = { albumId: 'album', coverUrl: 'https://r2.example/cover.jpg?X-Amz-Signature=first' }
 
 function storage() {
   let saved = null
@@ -57,7 +57,7 @@ test('concurrent consumers share one blob load and extraction across signed URL 
     loadCover: async () => { loads++; return new Blob(['cover']) },
     extract: async () => { extractions++; return '#123456' },
   })
-  const changedSignature = { ...item, albumCoverPresignedUrl: item.albumCoverPresignedUrl.replace('first', 'second') }
+  const changedSignature = { ...item, coverUrl: item.coverUrl.replace('first', 'second') }
   assert.deepEqual(await Promise.all([cache.load(item), cache.load(changedSignature)]), ['#123456', '#123456'])
   assert.equal(cache.peek(changedSignature), '#123456')
   await cache.load(item)
@@ -79,10 +79,10 @@ test('new cover paths invalidate colors and persisted entries remain bounded', a
   const cache = createCoverColorCache({ getStorage: () => saved, loadCover: async () => new Blob(),
     extract: async () => { calls++; return '#123456' },
   })
-  for (let index = 0; index < 102; index++) await cache.load({ albumCoverPresignedUrl: `https://r2.example/cover-${index}.jpg` })
+  for (let index = 0; index < 102; index++) await cache.load({ coverUrl: `https://r2.example/cover-${index}.jpg` })
   assert.equal(calls, 102)
   assert.equal(JSON.parse(saved.getItem()).length, 100)
-  assert.equal(cache.peek({ albumCoverPresignedUrl: 'https://r2.example/cover-0.jpg' }), undefined)
+  assert.equal(cache.peek({ coverUrl: 'https://r2.example/cover-0.jpg' }), undefined)
 })
 
 test('blocked storage and invalid persisted data do not prevent extraction', async () => {

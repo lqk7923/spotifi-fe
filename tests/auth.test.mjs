@@ -46,7 +46,7 @@ test('checks SSO silently once with code flow and PKCE before protected requests
     events.push(['fetch'])
     return Response.json([])
   } })
-  const pending = request('/track/all')
+  const pending = request('/tracks?page=0&size=20')
   assert.equal(events.length, 1)
   release()
   await pending
@@ -71,8 +71,8 @@ test('refreshes expiring tokens and reads the latest access token on every reque
     assert.equal(options.credentials, 'omit')
     return Response.json([])
   } })
-  await request('/track/all')
-  await request('/album/id/tracks')
+  await request('/tracks?page=0&size=20')
+  await request('/albums/id/tracks')
   assert.deepEqual(headers, ['Bearer fresh-0', 'Bearer fresh-1'])
 })
 
@@ -87,7 +87,7 @@ test('401 forces one refresh and retries once using the refreshed token', async 
     headers.push(options.headers.Authorization)
     return new Response(null, { status: headers.length === 1 ? 401 : 200 })
   } })
-  await request('/track/all')
+  await request('/tracks?page=0&size=20')
   assert.deepEqual(headers, ['Bearer access-token', 'Bearer new-access-token'])
   assert.deepEqual(events.filter(event => event[0] === 'refresh'), [['refresh', 30], ['refresh', -1]])
 })
@@ -96,7 +96,7 @@ test('a second 401 reports an authentication error and stops retrying', async ()
   const { session, events } = setup()
   let calls = 0
   const request = createApiClient({ session, fetcher: async () => { calls++; return new Response(null, { status: 401 }) } })
-  await assert.rejects(request('/track/all'), error => error.status === 401 && /Authentication failed/.test(error.message))
+  await assert.rejects(request('/tracks?page=0&size=20'), error => error.status === 401 && /Authentication failed/.test(error.message))
   assert.equal(calls, 2)
   assert.equal(events.filter(event => event[0] === 'refresh').length, 2)
 })
@@ -105,9 +105,24 @@ test('403 reports insufficient permission without forcing refresh or retrying', 
   const { session, events } = setup()
   let calls = 0
   const request = createApiClient({ session, fetcher: async () => { calls++; return new Response(null, { status: 403 }) } })
-  await assert.rejects(request('/track/all'), error => error.status === 403 && /permission/.test(error.message))
+  await assert.rejects(request('/tracks?page=0&size=20'), error => error.status === 403 && /permission/.test(error.message))
   assert.equal(calls, 1)
   assert.deepEqual(events.filter(event => event[0] === 'refresh'), [['refresh', 30]])
+})
+
+test('API failures expose the documented code, message and HTTP status', async () => {
+  for (const [status, code, message] of [
+    [400, 'BAD_REQUEST', 'Invalid request.'],
+    [401, 'UNAUTHORIZED', 'Authentication is required'],
+    [403, 'FORBIDDEN', 'Access is denied'],
+    [404, 'RESOURCE_NOT_FOUND', 'Album not found'],
+    [500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred'],
+  ]) {
+    const request = createApiClient({ session: { getAccessToken: async () => 'token' },
+      fetcher: async () => Response.json({ code, message }, { status }) })
+    await assert.rejects(request('/albums/id'), error =>
+      error.status === status && error.code === code && error.message === message)
+  }
 })
 
 test('failed initial or forced refresh removes private state and prevents further requests', async () => {
@@ -115,20 +130,20 @@ test('failed initial or forced refresh removes private state and prevents furthe
     const { session, events } = setup({ async updateToken(validity) { if (validity === failAt) throw new Error('Expired') } })
     let calls = 0
     const request = createApiClient({ session, fetcher: async () => { calls++; return new Response(null, { status: 401 }) } })
-    await assert.rejects(request('/track/all'), /log in again/)
+    await assert.rejects(request('/tracks?page=0&size=20'), /log in again/)
     assert.equal(calls, failAt === 30 ? 0 : 1)
     assert.equal(session.getSnapshot().status, 'signed-out')
     assert.equal(session.getSnapshot().user, null)
     assert.ok(events.some(event => event[0] === 'clear'))
     assert.equal(events.some(event => event[0] === 'login'), false)
-    await assert.rejects(request('/track/all'), /log in again/)
+    await assert.rejects(request('/tracks?page=0&size=20'), /log in again/)
     assert.equal(calls, failAt === 30 ? 0 : 1)
   }
 })
 
 test('missing tokens never produce Bearer undefined', async () => {
   const request = createApiClient({ session: { async getAccessToken() {} }, fetcher: () => assert.fail('Must not fetch') })
-  await assert.rejects(request('/track/all'), /log in/)
+  await assert.rejects(request('/tracks?page=0&size=20'), /log in/)
   const { session } = setup({ token: undefined })
   await session.initialize()
   assert.equal(session.getSnapshot().status, 'signed-out')
@@ -138,7 +153,7 @@ test('canceled requests do not retry after refresh or send a backend request', a
   const controller = new AbortController()
   const request = createApiClient({ session: { async getAccessToken() { controller.abort(); return 'token' } },
     fetcher: () => assert.fail('Aborted request must not fetch') })
-  await assert.rejects(request('/track/all', controller.signal), { name: 'AbortError' })
+  await assert.rejects(request('/tracks?page=0&size=20', controller.signal), { name: 'AbortError' })
 })
 
 test('presigned and protocol-relative URLs are refused by the backend API client', async () => {

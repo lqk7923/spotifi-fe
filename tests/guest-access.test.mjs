@@ -19,15 +19,14 @@ test('catalog metadata loads without credentials while SSO is pending, signed ou
       assert.equal(options.cache, 'no-store')
       return Response.json([])
     } })
-    await request('/track/all')
-    await request('/album/album%2Fid/tracks')
-    assert.deepEqual(paths, ['/track/all', '/album/album%2Fid/tracks'])
+    await request('/tracks?page=0&size=20')
+    assert.deepEqual(paths, ['/tracks?page=0&size=20'])
   }
 })
 
 test('public catalog rejects signing routes and external media before issuing any request', async () => {
   const request = createCatalogClient({ session: guestSession('signed-out'), fetcher: () => assert.fail('No media requests') })
-  for (const path of ['/track/id', '/track/track/id', '/track/public-tracks-info', 'https://r2.example/audio', '//r2.example/audio', '/album/id/tracks?audio=true']) {
+  for (const path of ['/tracks/id', '/tracks/id/playback', '/albums/id', '/albums/id/tracks', '/tracks?include=metadata', 'https://r2.example/audio', '//r2.example/audio', '/albums/id/tracks?audio=true']) {
     await assert.rejects(request(path), /metadata path/)
   }
 })
@@ -39,7 +38,7 @@ test('a protected catalog returns a useful BE configuration error without refres
       requests++
       return new Response(null, { status })
     } })
-    await assert.rejects(request('/track/all'), error => error.status === status && /public catalog access/.test(error.message))
+    await assert.rejects(request('/tracks?page=0&size=20'), error => error.status === status && /public catalog access/.test(error.message))
     assert.equal(requests, 1)
   }
 })
@@ -54,7 +53,7 @@ test('authenticated catalog requests keep token refresh and one retry after a 40
     tokens.push(options.headers.Authorization)
     return new Response(null, { status: tokens.length === 1 ? 401 : 200 })
   } })
-  await request('/track/all')
+  await request('/tracks?page=0&size=20')
   assert.deepEqual(refreshes, [false, true])
   assert.deepEqual(tokens, ['Bearer initial-token', 'Bearer fresh-token'])
 })
@@ -64,20 +63,20 @@ test('an expired authenticated session cannot silently downgrade its request to 
     getSnapshot: () => ({ status: 'authenticated' }),
     getAccessToken: async () => { throw new Error('Session expired') },
   }, fetcher: () => assert.fail('Expired sessions must stop protected requests') })
-  await assert.rejects(request('/track/all'), /Session expired/)
+  await assert.rejects(request('/tracks?page=0&size=20'), /Session expired/)
 })
 
 test('canceled catalog requests do not fetch', async () => {
   const controller = new AbortController()
   controller.abort()
   const request = createCatalogClient({ session: guestSession('signed-out'), fetcher: () => assert.fail('No request after cancellation') })
-  await assert.rejects(request('/track/all', controller.signal), { name: 'AbortError' })
+  await assert.rejects(request('/tracks?page=0&size=20', controller.signal), { name: 'AbortError' })
 })
 
 test('audio signing still rejects guests before calling the backend', async () => {
   const request = createApiClient({ session: { getAccessToken: async () => { throw new Error('Please log in') } },
     fetcher: () => assert.fail('Guests must not sign audio') })
-  await assert.rejects(request('/track/id'), /log in/)
+  await assert.rejects(request('/tracks/id/playback'), /log in/)
 })
 
 test('all guest play controls request login with the selected cover and never select a playing track', () => {

@@ -2,6 +2,14 @@ import { auth } from './keycloak.js'
 
 export const apiBase = (import.meta.env?.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '').replace(/\/track$/, '')
 
+async function apiError(response, fallback) {
+  const body = await response.json().catch(() => null)
+  const error = new Error(typeof body?.message === 'string' && body.message.trim() ? body.message : fallback)
+  error.status = response.status
+  if (typeof body?.code === 'string') error.code = body.code
+  return error
+}
+
 export function createApiClient({ session = auth, baseUrl = apiBase, fetcher = (...args) => fetch(...args) } = {}) {
   return async function request(path, signal) {
     // Accept only app-owned API paths. Presigned media URLs never enter this client.
@@ -28,9 +36,7 @@ export function createApiClient({ session = auth, baseUrl = apiBase, fetcher = (
           : response.status === 403
             ? 'You do not have permission to access this music.'
             : `The music server returned an error (${response.status}). Please try again.`
-        const error = new Error(message)
-        error.status = response.status
-        throw error
+        throw await apiError(response, message)
       }
       return response
     }
@@ -39,11 +45,11 @@ export function createApiClient({ session = auth, baseUrl = apiBase, fetcher = (
 
 export const apiRequest = createApiClient()
 
-// Only catalog metadata is public. Audio signing must use apiRequest above.
+// Only the paginated track list is public; track/album details require a token.
 export function createCatalogClient({ session = auth, baseUrl = apiBase, fetcher = (...args) => fetch(...args) } = {}) {
   const authenticatedRequest = createApiClient({ session, baseUrl, fetcher })
   return async function requestCatalog(path, signal) {
-    if (path !== '/track/all' && !/^\/album\/[^/]+\/tracks$/.test(path)) {
+    if (!/^\/tracks(?:\?(?:page=\d+&size=\d+))?$/.test(path)) {
       throw new Error('Expected a public catalog metadata path.')
     }
     if (session.getSnapshot().status === 'authenticated') return authenticatedRequest(path, signal)
@@ -55,11 +61,9 @@ export function createCatalogClient({ session = auth, baseUrl = apiBase, fetcher
       cache: 'no-store', credentials: 'omit', signal: requestSignal,
     })
     if (!response.ok) {
-      const error = new Error([401, 403].includes(response.status)
+      throw await apiError(response, [401, 403].includes(response.status)
         ? 'The music server has not enabled public catalog access yet.'
         : `The music server returned an error (${response.status}). Please try again.`)
-      error.status = response.status
-      throw error
     }
     return response
   }

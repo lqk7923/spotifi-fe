@@ -22,11 +22,11 @@ function fixtureApi(track, settings, mode, warmup, round, signal) {
   const query = new URLSearchParams({
     run: report.runId, profile: settings.profile, mode, warmup: String(warmup), round: String(round),
   })
-  const signingEndpointFor = () => `/__benchmark_api/track/${encodeURIComponent(track.trackId)}?${query}`
+  const signingEndpointFor = () => `/__benchmark_api/tracks/${encodeURIComponent(track.trackId)}/playback?${query}`
   return {
     requestPlaybackUrl: async (_track, requestSignal) => {
       const data = await fixtureJson(signingEndpointFor(), requestSignal || signal)
-      return data.trackPresignedLink
+      return data.data
     },
   }
 }
@@ -209,7 +209,7 @@ element('settings').addEventListener('submit', async (event) => {
       if (auth.getSnapshot().status !== 'authenticated') throw new Error('Please log in to run the live benchmark.')
     }
     const tracks = settings.source === 'fixture'
-      ? await fixtureJson('/__benchmark_api/tracks', signal)
+      ? (await fixtureJson('/__benchmark_api/tracks', signal)).data
       : await getTracks(signal)
     if (settings.source === 'fixture') {
       const profiles = await fixtureJson('/__benchmark_api/profiles', signal)

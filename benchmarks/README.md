@@ -9,6 +9,10 @@ Real API/R2 mode requires the same `VITE_KEYCLOAK_*` configuration and Keycloak
 login as the app. Allow `/benchmarks/preload.html` in the web client's redirect
 URIs. A first login redirects back to this page; start the run again after login.
 Simulated fixture mode remains independent of Keycloak.
+Live runs read every page of `/tracks` and sign audio through
+`/tracks/{id}/playback`, retaining the server's `expiresAt`. The development
+fixture uses the same `data` envelope and playback fields under
+`/__benchmark_api`, with a two-minute simulated lifetime.
 
 ## What it measures
 

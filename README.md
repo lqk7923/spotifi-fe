@@ -2,7 +2,7 @@
 
 A React music home page at `/`, based on the supplied Figma home design.
 Built with Vite, Tailwind CSS, daisyUI, and Lucide React. Visitors can browse the
-catalog and artwork; Keycloak login is required to listen or save likes.
+catalog and artwork; Keycloak login is required to open album details, listen, or save likes.
 Albums have dedicated pages at `/album/{id}`. Click the Spotifi logo to return
 to Home; browser Back/Forward also works. The old `/home` URL redirects to `/`.
 The player remains mounted when navigating between Home and an album.
@@ -26,7 +26,7 @@ npm run dev
 
 Start the music backend on `http://localhost:8080`, then open
 `http://localhost:5173/` (use the port printed by Vite if 5173 is occupied).
-Vite forwards `/track` and `/album/{uuid}/tracks` API requests to the backend during
+Vite forwards `/tracks` and `/albums` API requests to the backend during
 development and preview. Album page URLs serve the frontend so deep links and reloads work.
 To change the backend address, copy `.env.example` to `.env.local` and set
 `API_PROXY_TARGET`.
@@ -70,13 +70,12 @@ Passwords are
 never collected by this app. Access and refresh tokens stay in SDK memory and
 are never written to localStorage, sessionStorage, or Cache Storage.
 
-Guest catalog requests use `GET /track/all` and
-`GET /album/{albumId}/tracks`, without a Bearer header or cookies. BE must allow
-anonymous reads on these metadata routes and return artwork URLs without audio
-links. Cover renewal also uses album metadata, never the audio-signing endpoint.
-`GET /track/{trackId}` must remain protected by Keycloak access tokens.
-Public catalog 401/403 errors report the missing BE public-access configuration
-without refreshing tokens or redirecting the visitor.
+Guest catalog requests use `GET /tracks?page=0&size=20`, without a Bearer
+header or cookies. Only this paginated track list is public. Track detail,
+playback, album metadata, and album tracks require Bearer tokens. Guests opening
+an album see a sign-in prompt; the album loads after authentication. Guest cover
+renewal uses the public track list, while signed-in cover renewal uses album
+metadata. Public catalog 401/403 errors do not refresh tokens or redirect.
 
 The authenticated API client calls `updateToken(30)` before each protected BE request and reads
 the latest access token. It attaches `Authorization: Bearer <access_token>` only
@@ -134,8 +133,8 @@ refresh failure, one retry after `401`, stopping after another `401`, no retry
 for `403`, SDK login/registration/logout, account-specific likes keys, and media
 requests without JWT. With your deployed Keycloak/BE, also verify:
 
-- Opening `/` or an album while logged out shows the catalog/artwork without
-  redirecting to Keycloak. No audio signing, range downloads, or preload-worker
+- Opening `/` while logged out shows the catalog/artwork without redirecting to
+  Keycloak. Opening an album asks the visitor to sign in. No audio signing, range downloads, or preload-worker
   registration occurs until authenticated.
 - Selecting a track or Play all as a guest opens the artwork/sign-in dialog.
   Escape, its close button, and clicking the backdrop dismiss it. Login and
@@ -151,9 +150,25 @@ requests without JWT. With your deployed Keycloak/BE, also verify:
 
 ## Music API
 
-- `GET /track/all` (public): direct JSON array of `{ trackId, trackTitle, trackDuration, author, albumId, albumTitle, coverPresignedUrl }`. `trackDuration` is milliseconds (for example, `12000` means 12 seconds). `author` is the album author; only tracks with a matching album are returned.
-- `GET /album/{albumId}/tracks`: JSON album object `{ albumId, albumTitle, author, albumCoverPresignedUrl, releaseDate, albumTracks }`. Each item in `albumTracks` contains `{ trackId, trackTitle, trackDuration }`. Tracks inherit album metadata and its cover for playback and the queue. The release date shows the year with an English `Month dd yyyy` tooltip. HTTP 404 displays "Could not find that album"; network and server failures retain the retry state.
-- `GET /track/{trackId}` (authenticated): JSON `{ "trackPresignedLink": "https://...", "coverPresignedLink": "https://..." }`, valid for two minutes. The track ID is URL-encoded; the bucket is configured on the server.
+- `GET /tracks?page=0&size=20` (public): `{ data: Track[], pagination: { page, size, totalElements, totalPages } }`. Pages start at 0 and size is capped at 20. The app loads all pages for local search, albums, likes, and queue selection, preserving the server's fixed track-ID order.
+- `GET /tracks/{trackId}` (authenticated): `{ data: Track }` metadata only.
+- `GET /albums/{albumId}` (authenticated): `{ data: { albumId, title, artist, coverUrl, coverExpiresAt, releaseDate } }`.
+- `GET /albums/{albumId}/tracks` (authenticated): `{ data: Track[] }`, without pagination. An existing empty album returns an empty list; a missing album returns 404. The release date shows the year with an English `Month dd yyyy` tooltip.
+- `GET /tracks/{trackId}/playback` (authenticated): `{ data: { trackId, audioUrl, expiresAt } }`. Add `?include=metadata` to receive a `metadata` track object as well. Path IDs are URL-encoded.
+
+Track metadata uses `{ trackId, title, durationMs, artist, albumId, albumTitle, coverUrl, coverExpiresAt }`.
+Durations are milliseconds. A track's `artist` is independent of its album's
+`artist`; album queues retain each track's metadata. Album cards derived from
+the public list omit the album artist because that field is available only from
+album details. Missing covers have null URL/expiration fields.
+
+Errors use `{ code, message }`, without an error wrapper; the client preserves
+both fields and HTTP status. Album 404s display "Could not find that album";
+other failures retain the retry state. Audio and cover URL expirations are
+independent UTC timestamps. The app renews audio before `expiresAt`, including
+short lifetimes configured through backend `MEDIA_URL_EXPIRATION`; uncached
+covers renew before `coverExpiresAt` or once after an HTTP 401/403. Metadata
+requests bypass HTTP caches with `cache: 'no-store'`.
 
 The page uses API titles, authors, durations, and cover images. Covers show a subtle pulsing skeleton until the image has loaded and decoded; missing or failed images leave a plain dark tile. Reduced-motion preferences disable the pulse.
 Cover image bytes are cached in browser Cache Storage (up to 100 images), with a bounded memory fallback.
@@ -174,7 +189,7 @@ empty library.
 
 Albums are grouped by `albumId`; search includes album titles and IDs. Playback and
 the queue use the selected album's returned tracks. List order follows the response;
-the backend currently provides no pagination or guaranteed sort order. For production,
+the backend paginates the public list and fixes its order by track ID. For production,
 `VITE_API_BASE_URL` accepts the backend root (and the legacy `/track` prefix).
 
 Playback supports play/pause, seeking, volume/mute, previous/next, shuffle, repeat,
@@ -215,7 +230,7 @@ message order per tab so rapid track changes cannot remove the newest prefix.
 Other API/page requests pass through.
 Only prefixes are retained by this feature; the browser manages buffering the remainder.
 Track IDs must identify immutable audio files so a refreshed signature points to the
-same bytes. A signature older than 110 seconds is refreshed before the next R2 request;
+same bytes. The URL is refreshed before its server-provided expiration on the next R2 request;
 401/403 responses refresh once more without discarding the prefix.
 
 Changing the predicted track cancels the old preload. If a user selects it before
@@ -249,7 +264,7 @@ dashboard** policy (not the Wrangler CLI format). Open R2 Object Storage, select
 the audio bucket, then Settings > CORS Policy > JSON. Add these development origins
 to the existing policy while preserving any production origins, and save. The origin
 must match the actual frontend scheme/hostname/port, without a trailing slash or path.
-The `/track` Vite proxy only proxies the signing API; signed audio is fetched
+The `/tracks` and `/albums` Vite proxies handle backend metadata and signing APIs; signed audio is fetched
 directly from R2, so enabling CORS on the backend does not enable it on R2.
 
 After saving, reload the app to obtain a fresh signed URL. On the R2 range request,
@@ -277,7 +292,7 @@ npm run preview
 ```
 
 Deploy `dist` with an SPA fallback to `index.html` for `/` and `/album/{uuid}`.
-Configure a reverse proxy for `/track` and `/album/{uuid}/tracks` API requests,
+Configure a reverse proxy for `/tracks` and `/albums` API requests,
 or set `VITE_API_BASE_URL` to the backend root before building
 and allow the frontend origin through backend CORS. The browser must be able to access
 the signed R2 audio URL directly; the backend signing endpoint does not stream audio.

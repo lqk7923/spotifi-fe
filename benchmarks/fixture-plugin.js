@@ -8,7 +8,7 @@ export const NETWORK_PROFILES = {
 
 const tracks = Array.from({ length: 5 }, (_, index) => ({
   trackId: `sample-${index + 1}`,
-  trackTitle: `Silent WAV ${index + 1}`, trackDuration: 180000, author: 'Benchmark fixture',
+  title: `Silent WAV ${index + 1}`, durationMs: 180000, artist: 'Benchmark fixture',
 }))
 
 function createWave() {
@@ -37,20 +37,20 @@ export default function benchmarkFixture() {
           response.writeHead(status, { 'Content-Type': 'application/json' })
           response.end(JSON.stringify(value))
         }
-        if (url.pathname === '/__benchmark_api/tracks') return json(tracks)
+        if (url.pathname === '/__benchmark_api/tracks') return json({ data: tracks, pagination: { page: 0, size: 20, totalElements: tracks.length, totalPages: 1 } })
         if (url.pathname === '/__benchmark_api/profiles') return json(NETWORK_PROFILES)
         const runId = url.searchParams.get('run')
         if (url.pathname === '/__benchmark_api/traffic') return json(runs.get(runId) || [])
         const profile = NETWORK_PROFILES[url.searchParams.get('profile')]
         if (!profile || !runId) return json({ error: 'Missing benchmark profile/run' }, 400)
-        if (url.pathname.startsWith('/__benchmark_api/track/')) {
+        if (/^\/__benchmark_api\/tracks\/[^/]+\/playback$/.test(url.pathname)) {
           await new Promise((resolve) => setTimeout(resolve, profile.apiDelayMs))
           if (response.destroyed) return
           const audio = new URL('/__benchmark_api/audio.wav', url)
           audio.search = url.search
           audio.searchParams.set('signature', randomUUID())
           audio.searchParams.set('expires', String(Date.now() + 120_000))
-          return json({ trackPresignedLink: `http://${request.headers.host}${audio.pathname}${audio.search}` })
+          return json({ data: { trackId: decodeURIComponent(url.pathname.split('/')[3]), audioUrl: `http://${request.headers.host}${audio.pathname}${audio.search}`, expiresAt: new Date(Number(audio.searchParams.get('expires'))).toISOString() } })
         }
         if (url.pathname !== '/__benchmark_api/audio.wav') return json({ error: 'Not found' }, 404)
         if (Number(url.searchParams.get('expires')) < Date.now()) return json({ error: 'Expired signature' }, 403)

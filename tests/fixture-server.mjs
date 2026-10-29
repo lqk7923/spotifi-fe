@@ -2,19 +2,20 @@
 import http from 'node:http'
 
 const tracks = Array.from({ length: 9 }, (_, index) => ({
-  coverPresignedUrl: `http://localhost:8081/covers/${index < 6 ? 1 : 2}.svg?X-Amz-Signature=fixture`,
+  coverExpiresAt: new Date(Date.now() + 120_000).toISOString(),
+  coverUrl: `http://localhost:8081/covers/${index < 6 ? 1 : 2}.svg?X-Amz-Signature=fixture`,
   trackId: `${['550e8400', '7ab2c391', 'a83d1940', 'c982a01e', 'bd43d971', '42b7f310', 'e743bd82', '127cb894', '32c974bb'][index]}-e29b-41d4-a716-44665544000${index}`,
-  trackTitle: index === 0 ? 'Industrial Drum' : `Sample Track ${index + 1}`,
-  trackDuration: 180000,
-  author: index === 0 ? 'looplicator' : `Sample Artist ${index + 1}`,
+  title: index === 0 ? 'Industrial Drum' : `Sample Track ${index + 1}`,
+  durationMs: 180000,
+  artist: index === 0 ? 'looplicator' : `Sample Artist ${index + 1}`,
   albumId: `00000000-0000-0000-0000-00000000000${index < 6 ? 1 : 2}`,
   albumTitle: index < 6 ? 'Sample Album' : 'Weekend Album',
 }))
 let mode = 'normal'
-const catalogTracks = () => mode === 'mobile-library' ? tracks.map((track, index) => ({
+const catalogTracks = () => (mode === 'mobile-library' ? tracks.map((track, index) => ({
   ...track, albumId: `00000000-0000-0000-0000-00000000000${index + 1}`,
   albumTitle: `Sample Album ${index + 1}`,
-})) : tracks
+})) : tracks).map(track => ({ ...track, coverExpiresAt: new Date(Date.now() + 120_000).toISOString() }))
 let requests = []
 let audioRequests = []
 const wave = Buffer.alloc(44 + 44100 * 2 * 180)
@@ -40,48 +41,57 @@ http.createServer(async (request, response) => {
     response.end(JSON.stringify({ mode, requests, audioRequests }))
     return
   }
-  if (url.pathname === '/track/all') {
-    response.setHeader('Content-Type', 'application/json')
-    if (mode === 'list-error') { response.writeHead(500); response.end('{}'); return }
-    response.end(JSON.stringify(mode === 'empty' ? [] : mode === 'malformed' ? [null] : catalogTracks()))
-    return
+  const json = (body, status = 200) => {
+    response.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
+    response.end(JSON.stringify(body))
   }
-  if (url.pathname.startsWith('/album/')) {
-    response.setHeader('Content-Type', 'application/json')
-    if (mode === 'album-not-found') { response.writeHead(404); response.end('{}'); return }
-    if (mode === 'album-error') { response.writeHead(500); response.end('{}'); return }
-    const albumId = url.pathname.split('/')[2]
-    let albumTracks = catalogTracks().filter((track) => track.albumId === albumId)
+  const fail = (status, code, message) => json({ code, message }, status)
+  if (url.pathname === '/tracks') {
+    if (mode === 'list-error') return fail(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred')
+    const page = Number(url.searchParams.get('page') ?? 0)
+    const size = Number(url.searchParams.get('size') ?? 20)
+    if (!Number.isSafeInteger(page) || page < 0 || !Number.isSafeInteger(size) || size < 1 || size > 20) {
+      return fail(400, 'BAD_REQUEST', 'Invalid request.')
+    }
+    const all = mode === 'empty' ? [] : mode === 'malformed' ? [null] : mode === 'paginated'
+      ? Array.from({ length: 45 }, (_, index) => ({ ...tracks[index % tracks.length], trackId: '00000001-0000-0000-0000-' + String(index).padStart(12, '0') }))
+      : catalogTracks()
+    return json({ data: all.slice(page * size, (page + 1) * size),
+      pagination: { page, size, totalElements: all.length, totalPages: Math.ceil(all.length / size) } })
+  }
+  if (/^\/(albums|tracks)\//.test(url.pathname) && !request.headers.authorization?.startsWith('Bearer ')) {
+    return fail(401, 'UNAUTHORIZED', 'Authentication is required')
+  }
+  if (/^\/albums\/[^/]+(?:\/tracks)?$/.test(url.pathname)) {
+    if (mode === 'album-not-found') return fail(404, 'RESOURCE_NOT_FOUND', 'Album not found')
+    if (mode === 'album-error') return fail(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred')
+    const albumId = decodeURIComponent(url.pathname.split('/')[2])
+    let albumTracks = catalogTracks().filter(track => track.albumId === albumId)
     const album = albumTracks[0]
-    if (!album || mode === 'empty') { response.writeHead(404); response.end('{}'); return }
+    if (!album || mode === 'empty') return fail(404, 'RESOURCE_NOT_FOUND', 'Album not found')
     if (mode === 'album-switch') {
-      await new Promise((resolve) => setTimeout(resolve, 1200))
+      await new Promise(resolve => setTimeout(resolve, 1200))
       if (albumId.endsWith('2')) albumTracks = albumTracks.slice(0, 1)
     }
-    response.end(JSON.stringify({
-      albumId: album.albumId,
-      albumTitle: album.albumTitle,
-      author: album.author,
-      albumCoverPresignedUrl: album.coverPresignedUrl,
-      releaseDate: '2026-10-05',
-      albumTracks: albumTracks.map(({ trackId, trackTitle, trackDuration }) => ({
-        trackId, trackTitle, trackDuration,
-      })),
-    }))
-    return
+    return json({ data: url.pathname.endsWith('/tracks') ? (mode === 'album-empty' ? [] : albumTracks) : {
+      albumId: album.albumId, title: album.albumTitle, artist: 'Album artist',
+      coverUrl: album.coverUrl, coverExpiresAt: album.coverExpiresAt, releaseDate: '2026-10-05',
+    } })
   }
-  if (/^\/track\/[^/]+$/.test(url.pathname)) {
+  if (/^\/tracks\/[^/]+(?:\/playback)?$/.test(url.pathname)) {
+    const track = catalogTracks().find(track => track.trackId === decodeURIComponent(url.pathname.split('/')[2]))
+    if (!track) return fail(404, 'RESOURCE_NOT_FOUND', 'Track not found')
+    if (!url.pathname.endsWith('/playback')) return json({ data: track })
+    const include = url.searchParams.get('include')
+    if (include && include !== 'metadata') return fail(400, 'BAD_REQUEST', 'Invalid request.')
     requests.push(url.pathname)
-    if (mode === 'playback-error') { response.writeHead(500); response.end('Track not found'); return }
-    if (mode === 'race' && url.pathname.endsWith(tracks[0].trackId)) {
-      await new Promise((resolve) => setTimeout(resolve, 1800))
-    }
-    response.setHeader('Content-Type', 'application/json')
-    response.end(JSON.stringify({
-      trackPresignedLink: `http://localhost:8081/audio/${url.pathname.split('/').at(-1)}.wav?signature=${requests.length}`,
-      coverPresignedLink: catalogTracks().find(track => track.trackId === url.pathname.split('/').at(-1))?.coverPresignedUrl || null,
-    }))
-    return
+    if (mode === 'playback-error') return fail(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred')
+    if (mode === 'race' && track.trackId === tracks[0].trackId) await new Promise(resolve => setTimeout(resolve, 1800))
+    return json({ data: { trackId: track.trackId,
+      audioUrl: 'http://localhost:8081/audio/' + track.trackId + '.wav?signature=' + requests.length,
+      expiresAt: new Date(Date.now() + 120_000).toISOString(),
+      ...(include === 'metadata' ? { metadata: track } : {}),
+    } })
   }
   if (url.pathname.startsWith('/covers/')) {
     response.setHeader('Content-Type', 'image/svg+xml')

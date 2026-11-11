@@ -46,7 +46,6 @@ export function createAuthSession(createAdapter, redirectUri,
           publish({ status: 'authenticated', error: '', user: {
             id: claims.sub,
             name: claims.name || claims.preferred_username || 'Music lover',
-            storageKey: `music-likes:${encodeURIComponent(claims.iss || '')}:${encodeURIComponent(claims.sub || '')}`,
           } })
         } catch (cause) {
           publish({ status: 'error', user: null,

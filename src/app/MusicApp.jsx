@@ -13,13 +13,13 @@ import useMusicLayout from '../layouts/music/useMusicLayout.js'
 import { navigate } from './routing/navigation.js'
 
 export default function MusicApp({ albumId, page: Page }) {
-  const { status } = useSyncExternalStore(auth.subscribe, auth.getSnapshot)
+  const { status, user } = useSyncExternalStore(auth.subscribe, auth.getSnapshot)
   const authenticated = status === 'authenticated'
   const [listenPrompt, setListenPrompt] = useState(null)
   const [guestVolume, setGuestVolume] = useState(0.7)
   const [guestMuted, setGuestMuted] = useState(false)
   const requestLogin = useCallback(track => setListenPrompt({ track }), [])
-  const musicLibrary = useMusicLibrary(albumId, requestLogin)
+  const musicLibrary = useMusicLibrary(albumId, user, requestLogin)
   const layout = useMusicLayout()
   const searchRef = useRef(null)
   const libraryRef = useRef(null)

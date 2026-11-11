@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { beforeEach, afterEach, test, mock } from 'node:test'
 import { auth } from '../src/services/keycloak.js'
-import { getAlbum, getAlbumTracks, getTrack, getPlaybackUrl, getSigningEndpoint, getPlayback, getTracks } from '../src/services/music-api.js'
+import { getAlbum, getAlbumTracks, getLikedTracks, getTrack, getPlaybackUrl, getSigningEndpoint, getPlayback, getTracks } from '../src/services/music-api.js'
 import { getAlbumQueue, trackAuthor, trackDurationSeconds, trackLabel } from '../src/lib/tracks.js'
 
 afterEach(() => mock.restoreAll())
@@ -13,7 +13,7 @@ const track = {
   coverUrl: 'https://r2.example/cover.jpg?X-Amz-Signature=abc', coverExpiresAt: '2099-10-29T12:00:00Z',
 }
 const album = { albumId: track.albumId, title: track.albumTitle, artist: 'Album artist',
-  coverUrl: track.coverUrl, coverExpiresAt: track.coverExpiresAt, releaseDate: '2026-10-05' }
+  coverUrl: track.coverUrl, coverExpiresAt: track.coverExpiresAt, releaseDate: '2026-10-05', albumType: 'EP' }
 const page = (data, page = 0, totalElements = data.length) => ({ data,
   pagination: { page, size: 20, totalElements, totalPages: Math.ceil(totalElements / 20) } })
 
@@ -39,20 +39,44 @@ test('supports an empty database and rejects malformed pagination', async () => 
   }
 })
 
-test('loads protected album metadata and its unpaginated track list separately', async () => {
+test('loads protected album metadata and every page of its track list separately', async () => {
+  const first = Array.from({ length: 20 }, (_, i) => ({ ...track, trackId: String(i) }))
   const paths = []
   mock.method(globalThis, 'fetch', async (url, options) => {
     paths.push(url)
     assert.equal(options.headers.Authorization, 'Bearer test-access-token')
-    return Response.json({ data: url.endsWith('/tracks') ? [track] : album })
+    if (url.includes('page=0')) return Response.json(page(first, 0, 21))
+    if (url.includes('page=1')) return Response.json(page([track], 1, 21))
+    return Response.json({ data: album })
   })
   assert.deepEqual(await getAlbum(track.albumId), album)
-  assert.deepEqual(await getAlbumTracks(track.albumId), [track])
-  assert.deepEqual(paths, ['/albums/' + track.albumId, '/albums/' + track.albumId + '/tracks'])
+  assert.deepEqual(await getAlbumTracks(track.albumId), [...first, track])
+  const path = '/albums/' + track.albumId
+  assert.deepEqual(paths, [path, path + '/tracks?page=0&size=20', path + '/tracks?page=1&size=20'])
+})
+
+test('loads liked tracks in server order with the account token and pagination total', async () => {
+  const first = Array.from({ length: 20 }, (_, i) => ({ ...track, trackId: String(20 - i) }))
+  const paths = []
+  mock.method(globalThis, 'fetch', async (url, options) => {
+    paths.push(url)
+    assert.equal(options.headers.Authorization, 'Bearer test-access-token')
+    assert.equal(options.cache, 'no-store')
+    return Response.json(paths.length === 1 ? page(first, 0, 21) : page([track], 1, 21))
+  })
+  assert.deepEqual(await getLikedTracks(), { tracks: [...first, track], totalElements: 21 })
+  assert.deepEqual(paths, ['/users/me/liked-music?page=0&size=20', '/users/me/liked-music?page=1&size=20'])
+})
+
+test('distinguishes an empty liked collection from a failed request', async () => {
+  mock.method(globalThis, 'fetch', async () => Response.json(page([])))
+  assert.deepEqual(await getLikedTracks(), { tracks: [], totalElements: 0 })
+  mock.method(globalThis, 'fetch', async () => Response.json({ code: 'FORBIDDEN', message: 'Access denied' }, { status: 403 }))
+  await assert.rejects(getLikedTracks(), { status: 403, code: 'FORBIDDEN', message: 'Access denied' })
 })
 
 test('an existing empty album returns an empty queue; missing albums preserve 404', async () => {
-  mock.method(globalThis, 'fetch', async () => Response.json({ data: [] }))
+  mock.method(globalThis, 'fetch', async () => Response.json(page([])))
   assert.deepEqual(getAlbumQueue(await getAlbumTracks(track.albumId)), [])
   mock.method(globalThis, 'fetch', async () => Response.json({ code: 'RESOURCE_NOT_FOUND', message: 'Album not found' }, { status: 404 }))
   for (const request of [getAlbum, getAlbumTracks]) {
@@ -73,7 +97,7 @@ test('rejects malformed resource envelopes and track fields before rendering', a
   }
   for (const entry of [null, {}, { ...track, title: {} }, { ...track, artist: undefined },
     { ...track, durationMs: '12000' }, { ...track, durationMs: -1 }, { ...track, albumId: '' }, { ...track, albumTitle: undefined }]) {
-    mock.method(globalThis, 'fetch', async url => Response.json(url.includes('?') ? page([entry]) : { data: [entry] }))
+    mock.method(globalThis, 'fetch', async () => Response.json(page([entry])))
     await assert.rejects(getTracks(), /unexpected track list/)
     await assert.rejects(getAlbumTracks(track.albumId), /unexpected track list/)
   }
@@ -88,10 +112,11 @@ test('escapes resource IDs, preserves validation errors and forwards cancellatio
   for (const request of [getAlbum, getAlbumTracks, getTrack]) {
     await assert.rejects(request('id/?#'), error => error.status === 400 && error.message === 'Invalid request.')
   }
-  assert.deepEqual(paths, ['/albums/id%2F%3F%23', '/albums/id%2F%3F%23/tracks', '/tracks/id%2F%3F%23'])
+  assert.deepEqual(paths, ['/albums/id%2F%3F%23', '/albums/id%2F%3F%23/tracks?page=0&size=20', '/tracks/id%2F%3F%23'])
   const controller = new AbortController()
   mock.method(globalThis, 'fetch', async (_url, { signal }) => { controller.abort(); signal.throwIfAborted() })
   await assert.rejects(getAlbumTracks('id', controller.signal), { name: 'AbortError' })
+  await assert.rejects(getLikedTracks(controller.signal), { name: 'AbortError' })
 })
 
 test('track detail reads metadata from data rather than treating it as audio signing', async () => {

@@ -4,11 +4,10 @@ import { trackAuthor, trackDurationSeconds, trackKey, trackLabel } from '../../l
 import { albumPath } from '../../app/routing/navigation.js'
 import AppLink from '../../app/routing/AppLink.jsx'
 import Artwork from './Artwork.jsx'
-import IconButton from '../ui/IconButton.jsx'
 import TrackPlayButton from './TrackPlayButton.jsx'
 import TrackPlaybackIcon from './TrackPlaybackIcon.jsx'
 
-export default function TrackRow({ track, index, player, liked, onToggleLike, showAlbum }) {
+export default function TrackRow({ track, index, player, liked, showAlbum }) {
   const selected = player.currentTrack && trackKey(track) === trackKey(player.currentTrack)
   const subtitle = trackAuthor(track)
   const duration = selected && player.duration > 0 ? player.duration : trackDurationSeconds(track)
@@ -43,10 +42,7 @@ export default function TrackRow({ track, index, player, liked, onToggleLike, sh
         </td>
       )}
       <td className="like-column">
-        <IconButton
-          icon={Heart} label={`${liked ? 'Unlike' : 'Like'} ${trackLabel(track)}`}
-          active={liked} aria-pressed={liked} onClick={() => onToggleLike(track)}
-        />
+        {liked && <Heart className="liked-track-icon" size={18} fill="currentColor" role="img" aria-label="Liked" />}
       </td>
       <td className="duration-column">{duration != null ? timeLabel(duration) : '—'}</td>
     </tr>

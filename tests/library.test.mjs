@@ -1,19 +1,17 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { filterTracks, getAlbums, migrateLikes, trackKey } from '../src/lib/tracks.js'
+import { filterTracks, getAlbums } from '../src/lib/tracks.js'
 import { albumReleaseDate, greetingLabel, timeLabel } from '../src/lib/format.js'
 
 const tracks = [
   { trackId: 'first', title: 'Industrial Drum', artist: 'looplicator', durationMs: 12000, albumId: 'album-1', albumTitle: 'Factory Sounds' },
   { trackId: 'second', title: 'Night Air', artist: 'another artist', durationMs: 90500, albumId: 'album-2', albumTitle: 'Evening' },
 ]
-const filters = { likedOnly: false, likes: [], search: '' }
-
 test('library search matches API titles, authors, IDs, and collections', () => {
   for (const search of [' INDUSTRIAL ', 'Looplicator', 'first', 'Factory Sounds', 'album-1']) {
-    assert.deepEqual(filterTracks(tracks, { ...filters, search }), [tracks[0]])
+    assert.deepEqual(filterTracks(tracks, search), [tracks[0]])
   }
-  assert.deepEqual(filterTracks(tracks, { ...filters, search: 'missing' }), [])
+  assert.deepEqual(filterTracks(tracks, 'missing'), [])
 })
 
 test('groups albums by identity even when titles are shared', () => {
@@ -26,16 +24,11 @@ test('groups albums by identity even when titles are shared', () => {
   assert.deepEqual(getAlbums([]), [])
 })
 
-test('library combines likes and search without changing the playback list', () => {
-  const likes = [trackKey(tracks[1])]
-  assert.deepEqual(filterTracks(tracks, { ...filters, likedOnly: true, likes }), [tracks[1]])
-  assert.deepEqual(filterTracks(tracks, { ...filters, likedOnly: true, likes, search: 'Industrial' }), [])
-  assert.equal(tracks.length, 2)
-})
-
-test('migrates saved likes from bucket/trackId and removes duplicates', () => {
-  assert.deepEqual(migrateLikes(['bucket/first', 'first', null, 1, 'other/second']), ['first', 'second'])
-  assert.deepEqual(migrateLikes({}), [])
+test('search preserves collection order and leaves the playback list intact', () => {
+  const collection = [tracks[1], tracks[0]]
+  assert.deepEqual(filterTracks(collection, ''), collection)
+  assert.deepEqual(filterTracks(collection, 'Industrial'), [tracks[0]])
+  assert.deepEqual(collection, [tracks[1], tracks[0]])
 })
 
 test('album cards preserve a cover supplied by any track in the album', () => {

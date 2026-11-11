@@ -11,10 +11,6 @@ export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed
     resetFilters()
     onLibrary()
   }
-  const showLiked = () => {
-    library.showLiked()
-    onLibrary()
-  }
 
   return (
     <SidebarPanel id="library-sidebar" side="left" className="sidebar" label="Main navigation" collapsed={collapsed}>
@@ -42,9 +38,11 @@ export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed
           <button className="nav-item" onClick={showAll} aria-label="All tracks" title="All tracks">
             <span className="square-icon"><ListMusic size={28} /></span>All tracks
           </button>
-          <button className={`nav-item ${likedOnly ? 'nav-active' : ''}`} onClick={showLiked} aria-label={`Liked Songs, ${likedCount} tracks`} title="Liked Songs">
+          <button className={`nav-item ${likedOnly ? 'nav-active' : ''}`} onClick={library.showLiked}
+            aria-current={likedOnly ? 'true' : undefined}
+            aria-label={likedCount === null ? 'Liked Songs' : `Liked Songs, ${likedCount} tracks`} title="Liked Songs">
             <span className="square-icon liked-square"><Heart size={24} fill="currentColor" /></span>
-            Liked Songs<span className="nav-count">{likedCount}</span>
+            Liked Songs{likedCount !== null && <span className="nav-count">{likedCount}</span>}
           </button>
         </div>
         <div className="sidebar-divider" />

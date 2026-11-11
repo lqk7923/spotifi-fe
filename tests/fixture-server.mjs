@@ -46,21 +46,28 @@ http.createServer(async (request, response) => {
     response.end(JSON.stringify(body))
   }
   const fail = (status, code, message) => json({ code, message }, status)
-  if (url.pathname === '/tracks') {
-    if (mode === 'list-error') return fail(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred')
+  const paginated = all => {
     const page = Number(url.searchParams.get('page') ?? 0)
     const size = Number(url.searchParams.get('size') ?? 20)
     if (!Number.isSafeInteger(page) || page < 0 || !Number.isSafeInteger(size) || size < 1 || size > 20) {
       return fail(400, 'BAD_REQUEST', 'Invalid request.')
     }
-    const all = mode === 'empty' ? [] : mode === 'malformed' ? [null] : mode === 'paginated'
-      ? Array.from({ length: 45 }, (_, index) => ({ ...tracks[index % tracks.length], trackId: '00000001-0000-0000-0000-' + String(index).padStart(12, '0') }))
-      : catalogTracks()
     return json({ data: all.slice(page * size, (page + 1) * size),
       pagination: { page, size, totalElements: all.length, totalPages: Math.ceil(all.length / size) } })
   }
-  if (/^\/(albums|tracks)\//.test(url.pathname) && !request.headers.authorization?.startsWith('Bearer ')) {
+  if (url.pathname === '/tracks') {
+    if (mode === 'list-error') return fail(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred')
+    const all = mode === 'empty' ? [] : mode === 'malformed' ? [null] : mode === 'paginated'
+      ? Array.from({ length: 45 }, (_, index) => ({ ...tracks[index % tracks.length], trackId: '00000001-0000-0000-0000-' + String(index).padStart(12, '0') }))
+      : catalogTracks()
+    return paginated(all)
+  }
+  if (/^\/(albums|tracks|users)\//.test(url.pathname) && !request.headers.authorization?.startsWith('Bearer ')) {
     return fail(401, 'UNAUTHORIZED', 'Authentication is required')
+  }
+  if (url.pathname === '/users/me/liked-music') {
+    if (mode === 'liked-error') return fail(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred')
+    return paginated(mode === 'liked-empty' || mode === 'empty' ? [] : catalogTracks().slice(0, 3).reverse())
   }
   if (/^\/albums\/[^/]+(?:\/tracks)?$/.test(url.pathname)) {
     if (mode === 'album-not-found') return fail(404, 'RESOURCE_NOT_FOUND', 'Album not found')
@@ -73,9 +80,11 @@ http.createServer(async (request, response) => {
       await new Promise(resolve => setTimeout(resolve, 1200))
       if (albumId.endsWith('2')) albumTracks = albumTracks.slice(0, 1)
     }
-    return json({ data: url.pathname.endsWith('/tracks') ? (mode === 'album-empty' ? [] : albumTracks) : {
+    if (url.pathname.endsWith('/tracks')) return paginated(mode === 'album-empty' ? [] : albumTracks)
+    return json({ data: {
       albumId: album.albumId, title: album.albumTitle, artist: 'Album artist',
       coverUrl: album.coverUrl, coverExpiresAt: album.coverExpiresAt, releaseDate: '2026-10-05',
+      albumType: albumTracks.length <= 3 ? 'SINGLE' : 'EP',
     } })
   }
   if (/^\/tracks\/[^/]+(?:\/playback)?$/.test(url.pathname)) {

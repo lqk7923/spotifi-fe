@@ -22,7 +22,7 @@
   .player-track {
     gap: 9px;
   }
-  .player-track > .icon-button {
+  .player-track > .liked-track-icon {
     display: none;
   }
   .music-badge.badge {

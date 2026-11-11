@@ -1,7 +1,6 @@
 import { Heart } from 'lucide-react'
 import { trackAuthor, trackLabel } from '../../../lib/tracks.js'
 import Artwork from '../../../components/music/Artwork.jsx'
-import IconButton from '../../../components/ui/IconButton.jsx'
 
 export default function NowPlaying({ player, library }) {
   const { currentTrack } = player
@@ -13,12 +12,7 @@ export default function NowPlaying({ player, library }) {
         <strong>{currentTrack ? trackLabel(currentTrack) : 'Nothing playing yet'}</strong>
         <span>{currentTrack ? trackAuthor(currentTrack) : 'Choose a track to get started'}</span>
       </div>
-      {currentTrack && (
-        <IconButton
-          icon={Heart} label={liked ? 'Unlike current track' : 'Like current track'}
-          active={liked} aria-pressed={liked} onClick={() => library.toggleLike(currentTrack)}
-        />
-      )}
+      {liked && <Heart className="liked-track-icon" size={18} fill="currentColor" role="img" aria-label="Liked" />}
     </div>
   )
 }

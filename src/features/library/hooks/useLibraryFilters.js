@@ -9,6 +9,6 @@ export default function useLibraryFilters(albumId) {
     search, likedOnly,
     setSearch: value => setFilters({ scope: albumId, search: value, likedOnly }),
     resetFilters: () => setFilters({ scope: undefined, search: '', likedOnly: false }),
-    showLiked: () => setFilters({ scope: undefined, search: '', likedOnly: !likedOnly }),
+    showLiked: () => setFilters({ scope: undefined, search: '', likedOnly: true }),
   }
 }

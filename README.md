@@ -2,7 +2,7 @@
 
 A React music home page at `/`, based on the supplied Figma home design.
 Built with Vite, Tailwind CSS, daisyUI, and Lucide React. Visitors can browse the
-catalog and artwork; Keycloak login is required to open album details, listen, or save likes.
+catalog and artwork. Keycloak login is required to open album details, listen, or view Liked Songs.
 Albums have dedicated pages at `/album/{id}`. Click the Spotifi logo to return
 to Home; browser Back/Forward also works. The old `/home` URL redirects to `/`.
 The player bar stays visible, including before a track is selected. When an album
@@ -29,7 +29,7 @@ npm run dev
 
 Start the music backend on `http://localhost:8080`, then open
 `http://localhost:5173/` (use the port printed by Vite if 5173 is occupied).
-Vite forwards `/tracks` and `/albums` API requests to the backend during
+Vite forwards `/tracks`, `/albums`, and `/users` API requests to the backend during
 development and preview. Album page URLs serve the frontend so deep links and reloads work.
 To change the backend address, copy `.env.example` to `.env.local` and set
 `API_PROXY_TARGET`.
@@ -75,14 +75,14 @@ are never written to localStorage, sessionStorage, or Cache Storage.
 
 Guest catalog requests use `GET /tracks?page=0&size=20`, without a Bearer
 header or cookies. Only this paginated track list is public. Track detail,
-playback, album metadata, and album tracks require Bearer tokens. Guests opening
+playback, album metadata, album tracks, and Liked Songs require Bearer tokens. Guests opening
 an album see a sign-in prompt; the album loads after authentication. Guest cover
 renewal uses the public track list, while signed-in cover renewal uses album
 metadata. Public catalog 401/403 errors do not refresh tokens or redirect.
 
 The authenticated API client calls `updateToken(30)` before each protected BE request and reads
 the latest access token. It attaches `Authorization: Bearer <access_token>` only
-to BE track/album requests, with cookies omitted. On `401`, it forces refresh
+to backend API requests, with cookies omitted. On `401`, it forces refresh
 with `updateToken(-1)` and retries once. A second `401` displays an authentication
 error; `403` displays a permission error without retrying or forcing refresh.
 Refresh failure or remote logout stops playback and returns to guest browsing.
@@ -90,8 +90,7 @@ The profile shows the signed-in name and provides **Log out** through
 the SDK; logout unmounts private UI, cancels requests/preloads and stops playback.
 After Keycloak ends the session, it returns to the FE `/login` entry, which opens
 the Keycloak login page. Signing in from that entry returns to Home.
-Guests never read or write saved likes. Likes are stored separately for each realm/user; old unscoped browser likes are
-not imported into authenticated accounts.
+The Liked Songs API uses the signed-in account from the access token. Guests can sign in from the Liked Songs entry.
 
 Configure the web client in Keycloak:
 
@@ -133,7 +132,7 @@ References: [Keycloak JavaScript adapter](https://www.keycloak.org/securing-apps
 
 Automated tests cover initialization ordering, PKCE settings, fresh token headers,
 refresh failure, one retry after `401`, stopping after another `401`, no retry
-for `403`, SDK login/registration/logout, account-specific likes keys, and media
+for `403`, SDK login/registration/logout, protected liked-track pagination, and media
 requests without JWT. With your deployed Keycloak/BE, also verify:
 
 - Opening `/` while logged out shows the catalog/artwork without redirecting to
@@ -153,10 +152,11 @@ requests without JWT. With your deployed Keycloak/BE, also verify:
 
 ## Music API
 
-- `GET /tracks?page=0&size=20` (public): `{ data: Track[], pagination: { page, size, totalElements, totalPages } }`. Pages start at 0 and size is capped at 20. The app loads all pages for local search, albums, likes, and queue selection, preserving the server's fixed track-ID order.
+- `GET /tracks?page=0&size=20` (public) returns `{ data: Track[], pagination: { page, size, totalElements, totalPages } }`. Pages start at 0 and size is capped at 20. The app loads all pages in track-ID order for local search, album cards, and the playback queue.
 - `GET /tracks/{trackId}` (authenticated): `{ data: Track }` metadata only.
-- `GET /albums/{albumId}` (authenticated): `{ data: { albumId, title, artist, coverUrl, coverExpiresAt, releaseDate } }`.
-- `GET /albums/{albumId}/tracks` (authenticated): `{ data: Track[] }`, without pagination. An existing empty album returns an empty list; a missing album returns 404. The release date shows the year with an English `Month dd yyyy` tooltip.
+- `GET /albums/{albumId}` (authenticated) returns `{ data: { albumId, title, artist, coverUrl, coverExpiresAt, releaseDate, albumType } }`. The release date shows the year with an English `Month dd yyyy` tooltip.
+- `GET /albums/{albumId}/tracks?page=0&size=20` (authenticated) returns the same paginated track shape as the public catalog. An existing empty album returns an empty page. A missing album returns 404.
+- `GET /users/me/liked-music?page=0&size=20` (authenticated) returns paginated track metadata in the backend's liked order. Liked Songs uses these tracks for playback and uses `pagination.totalElements` for the sidebar count.
 - `GET /tracks/{trackId}/playback` (authenticated): `{ data: { trackId, audioUrl, expiresAt } }`. Add `?include=metadata` to receive a `metadata` track object as well. Path IDs are URL-encoded.
 
 Track metadata uses `{ trackId, title, durationMs, artist, albumId, albumTitle, coverUrl, coverExpiresAt }`.
@@ -267,7 +267,7 @@ dashboard** policy (not the Wrangler CLI format). Open R2 Object Storage, select
 the audio bucket, then Settings > CORS Policy > JSON. Add these development origins
 to the existing policy while preserving any production origins, and save. The origin
 must match the actual frontend scheme/hostname/port, without a trailing slash or path.
-The `/tracks` and `/albums` Vite proxies handle backend metadata and signing APIs; signed audio is fetched
+The Vite proxies handle backend metadata and signing APIs. Signed audio is fetched
 directly from R2, so enabling CORS on the backend does not enable it on R2.
 
 After saving, reload the app to obtain a fresh signed URL. On the R2 range request,
@@ -284,8 +284,7 @@ starts at `bytes=2500000-...`; subsequent seek requests may use different offset
 The following track should then receive its own prefix request. Signed URLs are
 not cache identities: the cache belongs to the selected track's playback session.
 
-Search filters titles, authors, track IDs, and collections locally. Likes are saved in browser storage;
-they are not sent to the backend.
+Search filters titles, artists, track IDs, and collections locally. Liked Songs is read-only until the backend exposes endpoints for adding and removing likes. Previously saved browser likes remain in browser storage.
 
 ## Production
 
@@ -295,7 +294,7 @@ npm run preview
 ```
 
 Deploy `dist` with an SPA fallback to `index.html` for `/` and `/album/{uuid}`.
-Configure a reverse proxy for `/tracks` and `/albums` API requests,
+Configure a reverse proxy for `/tracks`, `/albums`, and `/users` API requests,
 or set `VITE_API_BASE_URL` to the backend root before building
 and allow the frontend origin through backend CORS. The browser must be able to access
 the signed R2 audio URL directly; the backend signing endpoint does not stream audio.
@@ -336,7 +335,7 @@ display the Album page; `/` should still display Home.
 - `src/layouts/music/`: layout composition, TopBar, MainContent, shared SidebarPanel, and sidebar resizing.
 - `src/layouts/music/useMusicLayout.js`: sidebar widths and collapse state. The queue collapses on initial load below 1,000px and whenever the viewport crosses below that breakpoint. Users can reopen it manually; widening the viewport preserves their selection.
 - `src/pages/home/`, `src/pages/album/`: page content, headers, actions, and page-specific styles.
-- `src/features/library/`: library sidebar, track-list states, and separate hooks for tracks, albums, filters, and persisted likes.
+- `src/features/library/` contains the library sidebar, track-list states, and hooks for tracks, albums, filters, and account liked tracks.
 - `src/features/player/`: BottomBar, playback controls, queue sidebar, audio lifecycle, and preload support. Playback still uses the current page's collection.
 - `src/components/ui/`: shared buttons and scroll areas; `src/components/music/`: artwork, media items, track tables, and playback buttons.
 - `src/services/music-api.js`: backend requests and response handling.

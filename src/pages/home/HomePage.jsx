@@ -10,6 +10,16 @@ export default function HomePage({ library, player, libraryRef, onLibrary, mainR
   const [hoveredAlbum, setHoveredAlbum] = useState(null)
   const bannerColor = useBannerColor(hoveredAlbum)
 
+  if (library.likedOnly) {
+    return (
+      <MainContent scrollRef={mainRef} resetKey="liked-songs" busy={library.loading}>
+        <div className="content-sections">
+          <TrackLibrary library={library} player={player} libraryRef={libraryRef} />
+        </div>
+      </MainContent>
+    )
+  }
+
   return (
     <MainContent scrollRef={mainRef} className="home-page" style={{ '--home-banner-color': bannerColor }} header={<HomeCategories />}>
       <WelcomeSection library={library} player={player} onAlbumHover={setHoveredAlbum} />

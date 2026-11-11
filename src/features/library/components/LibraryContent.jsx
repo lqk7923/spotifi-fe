@@ -1,4 +1,4 @@
-import { CircleAlert, LoaderCircle, Music2, RefreshCw } from 'lucide-react'
+import { CircleAlert, Heart, LoaderCircle, Music2, RefreshCw } from 'lucide-react'
 import TrackTable from '../../../components/music/TrackTable.jsx'
 
 export default function LibraryContent({ library, player }) {
@@ -20,6 +20,15 @@ export default function LibraryContent({ library, player }) {
     )
   }
   if (!visibleTracks.length) {
+    if (likedOnly && !collectionTracks.length) {
+      return (
+        <div className="state-panel">
+          <span className="state-icon"><Heart size={32} /></span>
+          <h2>No liked songs yet</h2><p>Songs saved to your account will appear here.</p>
+          <button className="btn retry-button" onClick={resetFilters}>Show all tracks</button>
+        </div>
+      )
+    }
     if (selectedAlbum && !collectionTracks.length) {
       return (
         <div className="state-panel">
@@ -29,12 +38,9 @@ export default function LibraryContent({ library, player }) {
         </div>
       )
     }
-    let message = 'Add some tracks to your music collection, then refresh to start listening.'
-    if (collectionTracks.length) {
-      message = likedOnly
-        ? 'Like a track using its heart button to save it here.'
-        : 'Try another search.'
-    }
+    const message = collectionTracks.length
+      ? 'Try another search.'
+      : 'Add some tracks to your music collection, then refresh to start listening.'
     return (
       <div className="state-panel">
         <span className="state-icon"><Music2 size={32} /></span>
@@ -48,7 +54,6 @@ export default function LibraryContent({ library, player }) {
     )
   }
   return (
-    <TrackTable tracks={visibleTracks} player={player} isLiked={library.isLiked}
-      onToggleLike={library.toggleLike} showAlbum={!selectedAlbum} />
+    <TrackTable tracks={visibleTracks} player={player} isLiked={library.isLiked} showAlbum={!selectedAlbum} />
   )
 }

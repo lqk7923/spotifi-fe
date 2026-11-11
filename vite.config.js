@@ -7,16 +7,8 @@ import benchmarkFixture from './benchmarks/fixture-plugin.js'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const proxy = {
-    '/tracks': {
-      target: env.API_PROXY_TARGET || 'http://localhost:8080',
-      changeOrigin: true,
-    },
-    '/albums': {
-      target: env.API_PROXY_TARGET || 'http://localhost:8080',
-      changeOrigin: true,
-    },
-  }
+  const backend = { target: env.API_PROXY_TARGET || 'http://localhost:8080', changeOrigin: true }
+  const proxy = { '/tracks': backend, '/albums': backend, '/users': backend }
   return {
     appType: 'spa',
     plugins: [react(), tailwindcss(), benchmarkFixture()],

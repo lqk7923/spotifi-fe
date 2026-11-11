@@ -37,6 +37,11 @@ h2 {
   margin-top: 5px;
 }
 
+.liked-track-icon {
+  color: var(--green);
+  flex-shrink: 0;
+}
+
 .text-button {
   background: none;
   border: 0;

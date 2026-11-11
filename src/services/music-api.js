@@ -8,23 +8,34 @@ function trackList(tracks) {
   return [...new Map(tracks.map((track) => [trackKey(track), track])).values()]
 }
 
-export async function getTracks(signal) {
+async function getTrackPages(path, requestPage, signal) {
+  const size = 20
   const tracks = []
   for (let page = 0; ; page++) {
-    const response = await catalogRequest(`/tracks?page=${page}&size=20`, signal)
+    const response = await requestPage(`${path}?page=${page}&size=${size}`, signal)
     const body = await response.json()
     const pagination = body?.pagination
-    if (!pagination || pagination.page !== page || pagination.size !== 20
+    if (!pagination || pagination.page !== page || pagination.size !== size
       || !Number.isSafeInteger(pagination.totalPages) || pagination.totalPages < 0
       || !Number.isSafeInteger(pagination.totalElements) || pagination.totalElements < 0
-      || !Array.isArray(body.data) || body.data.length > 20
-      || pagination.totalPages !== Math.ceil(pagination.totalElements / 20)
-      || (page < pagination.totalPages - 1 && body.data.length !== 20)) {
+      || !Array.isArray(body.data) || body.data.length > size
+      || pagination.totalPages !== Math.ceil(pagination.totalElements / size)
+      || (page < pagination.totalPages - 1 && body.data.length !== size)) {
       throw new Error('The music server returned unexpected pagination.')
     }
     tracks.push(...trackList(body.data))
-    if (page + 1 >= pagination.totalPages) return trackList(tracks)
+    if (page + 1 >= pagination.totalPages) {
+      return { tracks: trackList(tracks), totalElements: pagination.totalElements }
+    }
   }
+}
+
+export async function getTracks(signal) {
+  return (await getTrackPages('/tracks', catalogRequest, signal)).tracks
+}
+
+export function getLikedTracks(signal) {
+  return getTrackPages('/users/me/liked-music', request, signal)
 }
 
 /**
@@ -43,9 +54,7 @@ export async function getAlbum(albumId, signal) {
 }
 
 export async function getAlbumTracks(albumId, signal) {
-  const response = await request(`/albums/${encodeURIComponent(albumId)}/tracks`, signal)
-  const body = await response.json()
-  return trackList(body?.data)
+  return (await getTrackPages(`/albums/${encodeURIComponent(albumId)}/tracks`, request, signal)).tracks
 }
 
 export async function getTrack(trackId, signal) {

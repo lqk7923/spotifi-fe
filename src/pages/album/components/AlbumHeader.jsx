@@ -3,6 +3,8 @@ import Artwork from '../../../components/music/Artwork.jsx'
 import { albumDurationLabel, albumReleaseDate } from '../../../lib/format.js'
 import { trackDurationSeconds } from '../../../lib/tracks.js'
 
+const albumTypes = new Map([['SINGLE', 'Single'], ['EP', 'EP'], ['LP', 'LP']])
+
 export default function AlbumHeader({ album, tracks }) {
   const releaseTooltipId = useId()
   const [tooltipDismissed, setTooltipDismissed] = useState(false)
@@ -13,7 +15,7 @@ export default function AlbumHeader({ album, tracks }) {
       <div className="album-identity">
         <Artwork track={album} />
         <div className="album-details">
-          <p className="album-type">Album</p>
+          <p className="album-type">{albumTypes.get(album.albumType) ?? 'Album'}</p>
           <h1 id="album-title">{album.title || 'Album'}</h1>
           <p className="album-meta">
             {album.artist && <><span className="album-author">{album.artist}</span><span aria-hidden="true"> • </span></>}

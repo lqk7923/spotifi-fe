@@ -251,13 +251,6 @@ test('failed SDK logout clears tokens and offers retry without automatically log
   assert.equal(events.some(event => event[0] === 'login'), false)
 })
 
-test('different accounts have different persisted likes keys', async () => {
-  const first = setup()
-  const second = setup({ tokenParsed: { sub: 'user-2', iss: 'https://auth.example/realms/music' } })
-  await Promise.all([first.session.initialize(), second.session.initialize()])
-  assert.notEqual(first.session.getSnapshot().user.storageKey, second.session.getSnapshot().user.storageKey)
-})
-
 test('configuration/init failures expose no user or protected access', async () => {
   const session = createAuthSession(() => keycloakConfig(), () => '')
   await session.initialize()

@@ -13,10 +13,11 @@
  * @property {string|null} coverUrl
  * @property {string|null} coverExpiresAt
  * @property {string|null} releaseDate
+ * @property {'SINGLE'|'EP'|'LP'|null} albumType
  */
 
 /**
- * Track metadata from /tracks and /albums/{id}/tracks.
+ * Track metadata shared by the catalog, album, and liked-music endpoints.
  * @typedef {AlbumTrack & { artist: string, albumId: string, albumTitle: string }} Track
  */
 
@@ -63,10 +64,9 @@ export function getAlbumQueue(tracks) {
   return [...new Map(tracks.map((track) => [trackKey(track), track])).values()]
 }
 
-export function filterTracks(tracks, { likedOnly, likes, search }) {
+export function filterTracks(tracks, search) {
   const query = search.toLowerCase().trim()
   return tracks.filter((track) => {
-    if (likedOnly && !likes.includes(trackKey(track))) return false
     const text = `${trackLabel(track)} ${trackAuthor(track)} ${track.trackId} ${track.albumTitle} ${track.albumId}`
     return text.toLowerCase().includes(query)
   })
@@ -83,10 +83,4 @@ export function getAlbums(tracks) {
     })
   }
   return [...albums.values()]
-}
-
-export function migrateLikes(saved) {
-  return Array.isArray(saved)
-    ? [...new Set(saved.filter(key => typeof key === 'string').map(key => key.split('/').at(-1)).filter(Boolean))]
-    : []
 }

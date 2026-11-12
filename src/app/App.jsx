@@ -7,7 +7,7 @@ import HomePage from '../pages/home/HomePage.jsx'
 import SearchPage from '../pages/search/SearchPage.jsx'
 import '../styles/app.css'
 
-const pages = { home: HomePage, album: AlbumPage, search: SearchPage }
+const pages = { home: HomePage, album: AlbumPage, 'liked-songs': AlbumPage, search: SearchPage }
 
 export default function App() {
   const route = useRoute()

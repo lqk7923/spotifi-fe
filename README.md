@@ -287,7 +287,7 @@ not cache identities: the cache belongs to the selected track's playback session
 
 Search at `/search?q=...` displays songs above albums on a vertically scrolling page. Each section wraps its cards and appears when it has results. Guests search album titles from public catalog metadata. Signed-in users search the backend album catalog by title or artist.
 
-Liked Songs is read-only until the backend exposes endpoints for adding and removing likes. Previously saved browser likes remain in browser storage.
+Liked Songs at `/liked-songs` uses the album layout with the Liked Songs artwork. It is read-only until the backend exposes endpoints for adding and removing likes. Previously saved browser likes remain in browser storage.
 
 ## Production
 
@@ -296,7 +296,7 @@ npm run build
 npm run preview
 ```
 
-Deploy `dist` with an SPA fallback to `index.html` for `/`, `/search`, and `/album/{uuid}`.
+Deploy `dist` with an SPA fallback to `index.html` for `/`, `/search`, `/liked-songs`, and `/album/{uuid}`.
 Configure a reverse proxy for `/tracks`, `/albums`, and `/users` API requests,
 or set `VITE_API_BASE_URL` to the backend root before building
 and allow the frontend origin through backend CORS. The browser must be able to access

@@ -1,16 +1,10 @@
-import { Headphones, Heart, Library, ListMusic, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react'
-import { albumPath } from '../../../app/routing/navigation.js'
-import MediaListItem from '../../../components/music/MediaListItem.jsx'
+import { Headphones, Library, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react'
+import LikedSongsArtwork from '../../../components/music/LikedSongsArtwork.jsx'
 import ScrollArea from '../../../components/ui/ScrollArea.jsx'
 import SidebarPanel from '../../../layouts/music/sidebar/SidebarPanel.jsx'
 
-export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed, compact = false, onToggleCollapse }) {
-  const { selectedAlbum, albums, likedOnly, likedCount } = library
-
-  const showAll = () => {
-    library.showAll()
-    onLibrary()
-  }
+export default function LibrarySidebar({ library, onSearch, collapsed, compact = false, onToggleCollapse }) {
+  const { likedOnly, likedCount } = library
 
   return (
     <SidebarPanel id="library-sidebar" side="left" className="sidebar" label="Main navigation" collapsed={collapsed}>
@@ -35,31 +29,12 @@ export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed
           <button className="nav-item" onClick={onSearch} aria-label="Search" title="Search"><Search size={23} />Search</button>
         </nav>
         <div className="nav-collection">
-          <button className="nav-item" onClick={showAll} aria-label="All tracks" title="All tracks">
-            <span className="square-icon"><ListMusic size={28} /></span>All tracks
-          </button>
-          <button className={`nav-item ${likedOnly ? 'nav-active' : ''}`} onClick={library.showLiked}
-            aria-current={likedOnly ? 'true' : undefined}
+          <button type="button" className={`nav-item ${likedOnly ? 'nav-active' : ''}`} onClick={library.showLiked}
+            aria-current={likedOnly ? 'page' : undefined}
             aria-label={likedCount === null ? 'Liked Songs' : `Liked Songs, ${likedCount} tracks`} title="Liked Songs">
-            <span className="square-icon liked-square"><Heart size={24} fill="currentColor" /></span>
+            <LikedSongsArtwork />
             Liked Songs{likedCount !== null && <span className="nav-count">{likedCount}</span>}
           </button>
-        </div>
-        <div className="sidebar-divider" />
-        <div className="sidebar-library">
-          <p className="eyebrow">YOUR ALBUMS</p>
-          {albums.map((album) => (
-            <MediaListItem
-              key={album.albumId}
-              track={album}
-              current={selectedAlbum?.albumId === album.albumId}
-              title={album.title || 'Untitled album'}
-              subtitle={`Album${album.artist?.trim() ? ` • ${album.artist.trim()}` : ''}`}
-              label={`${album.title || 'Untitled album'}${album.artist ? ` by ${album.artist}` : ''}`}
-              href={albumPath(album.albumId)}
-            />
-          ))}
-          {!albums.length && <p className="sidebar-hint">Your albums will appear here.</p>}
         </div>
         <div className="sidebar-bottom"><Headphones size={16} /><span>Made for listening.</span></div>
       </ScrollArea>

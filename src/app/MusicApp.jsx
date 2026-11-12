@@ -11,18 +11,19 @@ import TopBar from '../layouts/music/top-bar/TopBar.jsx'
 import MusicLayout from '../layouts/music/MusicLayout.jsx'
 import useMusicLayout from '../layouts/music/useMusicLayout.js'
 import useMusicSearch from '../pages/search/useMusicSearch.js'
-import { navigate, searchPath } from './routing/navigation.js'
+import { likedSongsPath, navigate, searchPath } from './routing/navigation.js'
 
 export default function MusicApp({ route, page: Page }) {
   const { albumId, query = '' } = route
   const isSearch = route.page === 'search'
-  const { status, user } = useSyncExternalStore(auth.subscribe, auth.getSnapshot)
+  const session = useSyncExternalStore(auth.subscribe, auth.getSnapshot)
+  const { status, user } = session
   const authenticated = status === 'authenticated'
   const [listenPrompt, setListenPrompt] = useState(null)
   const [guestVolume, setGuestVolume] = useState(0.7)
   const [guestMuted, setGuestMuted] = useState(false)
   const requestLogin = useCallback(track => setListenPrompt({ track }), [])
-  const musicLibrary = useMusicLibrary(albumId, user, requestLogin)
+  const musicLibrary = useMusicLibrary(route, session, requestLogin)
   const search = useMusicSearch(query, user, musicLibrary.catalog, musicLibrary.albums)
   const layout = useMusicLayout()
   const searchRef = useRef(null)
@@ -31,11 +32,10 @@ export default function MusicApp({ route, page: Page }) {
 
   const library = {
     ...musicLibrary,
-    likedOnly: !isSearch && musicLibrary.likedOnly,
-    showAll: () => { musicLibrary.showAll(); navigate('/') },
+    showAll: () => navigate('/'),
     showLiked: () => {
       if (!authenticated) { requestLogin(musicLibrary.collectionTracks[0]); return }
-      musicLibrary.showLiked(); navigate('/')
+      navigate(likedSongsPath)
     },
   }
   const focusLibrary = () => libraryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -55,7 +55,7 @@ export default function MusicApp({ route, page: Page }) {
         topBar={<TopBar search={query} onSearchChange={value => navigate(searchPath(value), { replace: isSearch })}
           searchRef={searchRef} onHome={showHome} />}
         leftSidebar={(
-          <LibrarySidebar library={library} onSearch={focusSearch} onLibrary={focusLibrary}
+          <LibrarySidebar library={library} onSearch={focusSearch}
             collapsed={layout.sidebarCollapsed} compact={layout.isMobile} onToggleCollapse={layout.toggleLibrary} />
         )}
         rightSidebar={(

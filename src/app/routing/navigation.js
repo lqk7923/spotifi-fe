@@ -1,3 +1,5 @@
+export const likedSongsPath = '/liked-songs'
+
 export function albumPath(albumId) {
   return `/album/${encodeURIComponent(albumId)}`
 }
@@ -8,6 +10,7 @@ export function searchPath(query = '') {
 
 export function resolveRoute(pathname, search = '') {
   if (pathname === '/') return { page: 'home' }
+  if (pathname === likedSongsPath || pathname === `${likedSongsPath}/`) return { page: 'liked-songs' }
   if (pathname === '/search' || pathname === '/search/') {
     return { page: 'search', query: new URLSearchParams(search).get('q') ?? '' }
   }

@@ -67,7 +67,7 @@
   text-align: center;
 }
 
-.album-not-found h1 {
+.album-not-found :is(h1, h2) {
   margin: 0;
   font-size: clamp(28px, 3vw, 42px);
   font-weight: 750;

@@ -24,7 +24,7 @@ export default function LibraryContent({ library, player }) {
       return (
         <div className="state-panel">
           <span className="state-icon"><Heart size={32} /></span>
-          <h2>No liked songs yet</h2><p>Songs saved to your account will appear here.</p>
+          <h3>No liked songs yet</h3><p>Songs saved to your account will appear here.</p>
           <button className="btn retry-button" onClick={showAll}>Show all tracks</button>
         </div>
       )

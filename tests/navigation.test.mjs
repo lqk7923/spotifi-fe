@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { albumPath, navigate, resolveRoute, searchPath } from '../src/app/routing/navigation.js'
+import { albumPath, likedSongsPath, navigate, resolveRoute, searchPath } from '../src/app/routing/navigation.js'
 
 const albumId = '550e8400-e29b-41d4-a716-446655440000'
 
@@ -30,6 +30,12 @@ test('missing IDs and unrelated paths do not become album API requests', () => {
 
 test('album links escape IDs as one path segment', () => {
   assert.equal(albumPath('album/id?'), '/album/album%2Fid%3F')
+})
+
+test('liked songs has its own page and supports direct links', () => {
+  assert.deepEqual(resolveRoute(likedSongsPath), { page: 'liked-songs' })
+  assert.deepEqual(resolveRoute(`${likedSongsPath}/`), { page: 'liked-songs' })
+  assert.deepEqual(resolveRoute(albumPath('liked-songs')), { page: 'album', albumId: 'liked-songs' })
 })
 
 test('search deep links round trip the query and support an empty search', () => {

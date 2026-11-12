@@ -1,24 +1,25 @@
 import { useId, useState } from 'react'
 import Artwork from '../../../components/music/Artwork.jsx'
+import LikedSongsArtwork from '../../../components/music/LikedSongsArtwork.jsx'
 import { albumDurationLabel, albumReleaseDate } from '../../../lib/format.js'
 import { trackDurationSeconds } from '../../../lib/tracks.js'
 
 const albumTypes = new Map([['SINGLE', 'Single'], ['EP', 'EP'], ['LP', 'LP']])
 
-export default function AlbumHeader({ album, tracks }) {
+export default function AlbumHeader({ album, tracks, likedOnly, showTrackSummary }) {
   const releaseTooltipId = useId()
   const [tooltipDismissed, setTooltipDismissed] = useState(false)
   const duration = tracks.reduce((total, track) => total + (trackDurationSeconds(track) || 0), 0)
-  const release = albumReleaseDate(album.releaseDate)
+  const release = albumReleaseDate(album?.releaseDate)
   return (
     <section className="album-hero" aria-labelledby="album-title">
       <div className="album-identity">
-        <Artwork track={album} />
+        {likedOnly ? <LikedSongsArtwork /> : <Artwork track={album} />}
         <div className="album-details">
-          <p className="album-type">{albumTypes.get(album.albumType) ?? 'Album'}</p>
-          <h1 id="album-title">{album.title || 'Album'}</h1>
-          <p className="album-meta">
-            {album.artist && <><span className="album-author">{album.artist}</span><span aria-hidden="true"> • </span></>}
+          <p className="album-type">{likedOnly ? 'Playlist' : albumTypes.get(album?.albumType) ?? 'Album'}</p>
+          <h1 id="album-title">{likedOnly ? 'Liked Songs' : album?.title || 'Album'}</h1>
+          {showTrackSummary && <p className="album-meta">
+            {album?.artist && <><span className="album-author">{album.artist}</span><span aria-hidden="true"> • </span></>}
             {release && <>
               <span className="album-release" data-dismissed={tooltipDismissed}
                 onMouseEnter={() => setTooltipDismissed(false)}
@@ -31,7 +32,7 @@ export default function AlbumHeader({ album, tracks }) {
             </>}
             <span>{tracks.length.toLocaleString('en-US')} {tracks.length === 1 ? 'song' : 'songs'}</span>
             {duration > 0 && <><span aria-hidden="true">, </span><span className="album-total-duration">{albumDurationLabel(duration)}</span></>}
-          </p>
+          </p>}
         </div>
       </div>
     </section>

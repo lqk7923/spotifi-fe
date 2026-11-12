@@ -54,3 +54,15 @@
   height: 42px;
   aspect-ratio: 1;
 }
+
+.liked-songs-art {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--liked-songs-color), #b8dac4);
+  color: #fff;
+}
+
+.liked-songs-art svg {
+  width: 50%;
+  height: 50%;
+}

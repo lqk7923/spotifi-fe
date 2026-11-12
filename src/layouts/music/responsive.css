@@ -22,9 +22,6 @@
   .player-track {
     gap: 9px;
   }
-  .player-track > .liked-track-icon {
-    display: none;
-  }
   .music-badge.badge {
     display: none;
   }
@@ -224,6 +221,11 @@
   .music-card .artwork-button, .music-card .track-art {
     width: 108px;
     height: 108px;
+  }
+
+  .music-card .card-like {
+    top: 12px;
+    right: 12px;
   }
 
   .music-card h3 {

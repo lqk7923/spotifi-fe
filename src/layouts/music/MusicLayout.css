@@ -41,3 +41,18 @@
 .topbar, .player-bar {
   margin-inline: calc(-1 * var(--panel-gap));
 }
+
+.liked-songs-feedback.alert {
+  position: fixed;
+  z-index: 40;
+  inset: auto 12px calc(var(--player-height) + var(--player-gap) + 12px) auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: min(420px, calc(100% - 24px));
+  overflow-wrap: anywhere;
+}
+
+.liked-songs-feedback .icon-button {
+  color: inherit;
+}

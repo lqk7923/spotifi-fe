@@ -1,6 +1,8 @@
 import { isValidAlbum, isValidTrack, trackKey } from '../lib/tracks.js'
 import { apiBase, apiRequest as request, catalogRequest } from './api-client.js'
 
+const likedMusicPath = '/users/me/liked-music'
+
 async function getPages(path, {
   signal, query, requestPage = request, kind = 'track', validate = isValidTrack, key = trackKey,
 }) {
@@ -36,8 +38,15 @@ export async function getTracks(signal, query) {
 }
 
 export async function getLikedTracks(signal) {
-  const { items, totalElements } = await getPages('/users/me/liked-music', { signal })
+  const { items, totalElements } = await getPages(likedMusicPath, { signal })
   return { tracks: items, totalElements }
+}
+
+export async function setTrackLiked(trackId, liked, signal) {
+  const response = await request(`${likedMusicPath}/${encodeURIComponent(trackId)}`, signal, {
+    method: 'PATCH', json: { liked },
+  })
+  if (response.status !== 204) throw new Error('The music server did not confirm the like update.')
 }
 
 export async function searchAlbums(query, signal) {

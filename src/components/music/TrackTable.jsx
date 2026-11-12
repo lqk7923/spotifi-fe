@@ -2,7 +2,7 @@ import { Clock3 } from 'lucide-react'
 import { trackKey } from '../../lib/tracks.js'
 import TrackRow from './TrackRow.jsx'
 
-export default function TrackTable({ tracks, player, isLiked, showAlbum = true }) {
+export default function TrackTable({ tracks, player, library, showAlbum = true }) {
   return (
     <div className="track-table-wrap">
       <table className="table track-table">
@@ -16,7 +16,7 @@ export default function TrackTable({ tracks, player, isLiked, showAlbum = true }
         </thead>
         <tbody>
           {tracks.map((track, index) => (
-            <TrackRow key={trackKey(track)} track={track} index={index} player={player} liked={isLiked(track)} showAlbum={showAlbum} />
+            <TrackRow key={trackKey(track)} track={track} index={index} player={player} library={library} showAlbum={showAlbum} />
           ))}
         </tbody>
       </table>

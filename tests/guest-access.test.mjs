@@ -27,7 +27,7 @@ test('catalog metadata loads without credentials while SSO is pending, signed ou
 test('public catalog rejects signing routes and external media before issuing any request', async () => {
   const request = createCatalogClient({ session: guestSession('signed-out'), fetcher: () => assert.fail('No media requests') })
   for (const path of ['/tracks/id', '/tracks/id/playback', '/albums?page=0&size=20&q=test', '/albums/id',
-    '/albums/id/tracks', '/users/me/liked-music?page=0&size=20', '/tracks?include=metadata',
+    '/albums/id/tracks', '/users/me/liked-music?page=0&size=20', '/users/me/liked-music/id', '/tracks?include=metadata',
     '/tracks?page=0&size=20&q=test&include=metadata', 'https://r2.example/audio', '//r2.example/audio']) {
     await assert.rejects(request(path), /metadata path/)
   }

@@ -1,4 +1,4 @@
-import { AudioLines, Heart } from 'lucide-react'
+import { AudioLines } from 'lucide-react'
 import { timeLabel } from '../../lib/format.js'
 import { trackAuthor, trackDurationSeconds, trackKey, trackLabel } from '../../lib/tracks.js'
 import { albumPath } from '../../app/routing/navigation.js'
@@ -6,8 +6,9 @@ import AppLink from '../../app/routing/AppLink.jsx'
 import Artwork from './Artwork.jsx'
 import TrackPlayButton from './TrackPlayButton.jsx'
 import TrackPlaybackIcon from './TrackPlaybackIcon.jsx'
+import TrackLikeButton from './TrackLikeButton.jsx'
 
-export default function TrackRow({ track, index, player, liked, showAlbum }) {
+export default function TrackRow({ track, index, player, library, showAlbum }) {
   const selected = player.currentTrack && trackKey(track) === trackKey(player.currentTrack)
   const subtitle = trackAuthor(track)
   const duration = selected && player.duration > 0 ? player.duration : trackDurationSeconds(track)
@@ -42,7 +43,7 @@ export default function TrackRow({ track, index, player, liked, showAlbum }) {
         </td>
       )}
       <td className="like-column">
-        {liked && <Heart className="liked-track-icon" size={18} fill="currentColor" role="img" aria-label="Liked" />}
+        <TrackLikeButton track={track} library={library} />
       </td>
       <td className="duration-column">{duration != null ? timeLabel(duration) : '—'}</td>
     </tr>

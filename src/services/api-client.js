@@ -11,20 +11,21 @@ async function apiError(response, fallback) {
 }
 
 export function createApiClient({ session = auth, baseUrl = apiBase, fetcher = (...args) => fetch(...args) } = {}) {
-  return async function request(path, signal) {
+  return async function request(path, signal, { method = 'GET', json } = {}) {
     // Accept only app-owned API paths. Presigned media URLs never enter this client.
     if (!path.startsWith('/') || path.startsWith('//')) throw new Error('Expected a relative backend API path.')
     const requestSignal = signal
       ? AbortSignal.any([signal, AbortSignal.timeout(15000)])
       : AbortSignal.timeout(15000)
+    const body = json === undefined ? undefined : JSON.stringify(json)
     for (let attempt = 0; attempt < 2; attempt++) {
       requestSignal.throwIfAborted()
       const token = await session.getAccessToken(attempt === 1)
       requestSignal.throwIfAborted()
       if (!token) throw new Error('Please log in before accessing your music.')
       const response = await fetcher(`${baseUrl}${path}`, {
-        cache: 'no-store', credentials: 'omit', signal: requestSignal,
-        headers: { Authorization: `Bearer ${token}` },
+        method, body, cache: 'no-store', credentials: 'omit', signal: requestSignal,
+        headers: { Authorization: `Bearer ${token}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
       })
       if (response.status === 401 && attempt === 0) {
         await response.body?.cancel()

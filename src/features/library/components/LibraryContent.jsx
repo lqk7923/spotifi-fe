@@ -48,6 +48,6 @@ export default function LibraryContent({ library, player }) {
     )
   }
   return (
-    <TrackTable tracks={collectionTracks} player={player} isLiked={library.isLiked} showAlbum={!selectedAlbum} />
+    <TrackTable tracks={collectionTracks} player={player} library={library} showAlbum={!selectedAlbum} />
   )
 }

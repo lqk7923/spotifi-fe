@@ -5,7 +5,7 @@ import TrackCard from '../../components/music/TrackCard.jsx'
 import PlaybackError from '../../features/player/components/PlaybackError.jsx'
 import MainContent from '../../layouts/music/main-content/MainContent.jsx'
 
-export default function SearchPage({ search, player, mainRef }) {
+export default function SearchPage({ search, player, library, mainRef }) {
   const { term, tracks, albums, loading, error, refresh } = search
   return (
     <MainContent scrollRef={mainRef} resetKey={term} busy={loading}>
@@ -16,7 +16,7 @@ export default function SearchPage({ search, player, mainRef }) {
           <section aria-labelledby="search-songs-title">
             <div className="section-heading"><h2 id="search-songs-title">Songs</h2></div>
             <div className="search-grid">
-              {tracks.map(track => <TrackCard key={track.trackId} track={track} player={player} />)}
+              {tracks.map(track => <TrackCard key={track.trackId} track={track} player={player} library={library} />)}
             </div>
           </section>
         )}

@@ -14,7 +14,7 @@ export default function DiscoverSection({ library, player, onLibrary }) {
       </div>
       <TrackCarousel>
         {collectionTracks.slice(0, 5).map(track => (
-          <TrackCard key={trackKey(track)} track={track} player={player} />
+          <TrackCard key={trackKey(track)} track={track} player={player} library={library} />
         ))}
       </TrackCarousel>
     </section>

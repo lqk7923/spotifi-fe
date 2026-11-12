@@ -51,6 +51,14 @@
   width: 46px;
 }
 
+.track-table td.like-column {
+  padding-inline: 0;
+}
+
+.like-column .icon-button {
+  margin-inline: auto;
+}
+
 .duration-column {
   width: 53px;
   text-align: right;

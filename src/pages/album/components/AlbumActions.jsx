@@ -4,7 +4,7 @@ import IconButton from '../../../components/ui/IconButton.jsx'
 import TrackPlaybackIcon from '../../../components/music/TrackPlaybackIcon.jsx'
 
 export default function AlbumActions({ library, player }) {
-  const { loading, error, collectionTracks, selectedAlbum, likedOnly, refresh } = library
+  const { loading, error, collectionTracks, selectedAlbum, likedOnly, refresh, refreshDisabled } = library
   const collectionLabel = likedOnly ? 'Liked Songs' : `album ${selectedAlbum?.title || 'Album'}`
   const trackSelected = player.currentTrack && collectionTracks.some(
     (track) => trackKey(track) === trackKey(player.currentTrack),
@@ -29,7 +29,7 @@ export default function AlbumActions({ library, player }) {
         disabled={loading || !!error || !collectionTracks.length}
         onClick={() => player.setShuffle((value) => !value)}
       />
-      <IconButton icon={RefreshCw} label="Refresh tracks" disabled={loading} onClick={refresh} />
+      <IconButton icon={RefreshCw} label="Refresh tracks" disabled={loading || refreshDisabled} onClick={refresh} />
     </div>
   )
 }

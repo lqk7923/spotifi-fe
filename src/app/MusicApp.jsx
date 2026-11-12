@@ -1,4 +1,6 @@
 import { useCallback, useRef, useState, useSyncExternalStore } from 'react'
+import { X } from 'lucide-react'
+import IconButton from '../components/ui/IconButton.jsx'
 import AuthenticatedPlayer from '../features/player/components/AuthenticatedPlayer.jsx'
 import { createGuestPlayer } from '../features/player/lib/guest-player.js'
 import ListenPrompt from '../features/auth/ListenPrompt.jsx'
@@ -68,6 +70,12 @@ export default function MusicApp({ route, page: Page }) {
       >
         <Page albumId={albumId} library={library} player={player} libraryRef={libraryRef}
           mainRef={mainRef} onLibrary={focusLibrary} search={search} />
+        {library.likeError && (
+          <div className="liked-songs-feedback alert alert-error" role="alert">
+            <span>{library.likeError}</span>
+            <IconButton icon={X} label="Dismiss like update error" onClick={library.dismissLikeError} />
+          </div>
+        )}
       </MusicLayout>
       {listenPrompt && <ListenPrompt track={listenPrompt.track} onClose={() => setListenPrompt(null)} />}
     </>

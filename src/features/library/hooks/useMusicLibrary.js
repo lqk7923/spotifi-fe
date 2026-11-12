@@ -24,7 +24,11 @@ export default function useMusicLibrary({ page, albumId }, { status, user }, onR
     requiresLogin: likedOnly ? status !== 'loading' && status !== 'authenticated' : album.requiresLogin,
     requestCollectionLogin: () => onRequireLogin(selectedAlbum),
     refresh: collection.refresh,
+    refreshDisabled: likedOnly && liked.saving,
     likedOnly,
     isLiked: liked.isLiked, likedCount: liked.totalElements,
+    isLikeDisabled: track => !!user && (!liked.canToggle || liked.isPending(track)),
+    toggleLike: track => user ? liked.toggleLike(track) : onRequireLogin(track),
+    likeError: liked.saveError, dismissLikeError: liked.clearSaveError,
   }
 }

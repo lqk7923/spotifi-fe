@@ -3,8 +3,9 @@ import { trackAuthor, trackKey, trackLabel } from '../../lib/tracks.js'
 import Artwork from './Artwork.jsx'
 import TrackPlayButton from './TrackPlayButton.jsx'
 import TrackPlaybackIcon from './TrackPlaybackIcon.jsx'
+import TrackLikeButton from './TrackLikeButton.jsx'
 
-export default function TrackCard({ track, player }) {
+export default function TrackCard({ track, player, library }) {
   const tooltipId = useId()
   const [tooltipDismissed, setTooltipDismissed] = useState(false)
   const selected = !!player.currentTrack && trackKey(player.currentTrack) === trackKey(track)
@@ -22,6 +23,7 @@ export default function TrackCard({ track, player }) {
           <span id={tooltipId} className="home-play-tooltip" role="tooltip">{action}</span>
         </span>
       </TrackPlayButton>
+      <TrackLikeButton track={track} library={library} className="card-like" />
       <h3>{trackLabel(track)}</h3><p title={trackAuthor(track)}>{trackAuthor(track)}</p>
     </article>
   )

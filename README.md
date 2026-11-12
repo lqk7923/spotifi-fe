@@ -114,7 +114,7 @@ Supply the actual FE origins to BE, for example:
 CORS_ALLOWED_ORIGINS=http://localhost:5173,https://web.example.com
 ```
 
-BE must permit the `Authorization` header and browser `OPTIONS` preflight.
+BE must permit the `Authorization` and `Content-Type` headers, the `PATCH` method, and browser `OPTIONS` preflight.
 FE does not send `credentials: "include"`, call `OPTIONS` manually, or set
 `Access-Control-Allow-*` response headers. The local Vite proxy does not verify
 production BE CORS; test direct cross-origin requests in each environment.
@@ -158,6 +158,7 @@ requests without JWT. With your deployed Keycloak/BE, also verify:
 - `GET /albums/{albumId}` (authenticated) returns `{ data: { albumId, title, artist, coverUrl, coverExpiresAt, releaseDate, albumType } }`. The release date shows the year with an English `Month dd yyyy` tooltip.
 - `GET /albums/{albumId}/tracks?page=0&size=20` (authenticated) returns the same paginated track shape as the public catalog. An existing empty album returns an empty page. A missing album returns 404.
 - `GET /users/me/liked-music?page=0&size=20` (authenticated) returns paginated track metadata in the backend's liked order. Liked Songs uses these tracks for playback and uses `pagination.totalElements` for the sidebar count.
+- `PATCH /users/me/liked-music/{trackId}` (authenticated) sets the like for the signed-in account. Send `{ "liked": true }` to save a track or `{ "liked": false }` to remove it. A successful update returns `204 No Content`.
 - `GET /tracks/{trackId}/playback` (authenticated): `{ data: { trackId, audioUrl, expiresAt } }`. Add `?include=metadata` to receive a `metadata` track object as well. Path IDs are URL-encoded.
 
 Track metadata uses `{ trackId, title, durationMs, artist, albumId, albumTitle, coverUrl, coverExpiresAt }`.
@@ -287,7 +288,7 @@ not cache identities: the cache belongs to the selected track's playback session
 
 Search at `/search?q=...` displays songs above albums on a vertically scrolling page. Each section wraps its cards and appears when it has results. Guests search album titles from public catalog metadata. Signed-in users search the backend album catalog by title or artist.
 
-Liked Songs at `/liked-songs` uses the album layout with the Liked Songs artwork. It is read-only until the backend exposes endpoints for adding and removing likes. Previously saved browser likes remain in browser storage.
+Liked Songs at `/liked-songs` uses the album layout with the Liked Songs artwork. The heart on a song card, track row, or the player saves or removes a track. Liked Songs and the sidebar count update after the server confirms the change.
 
 ## Production
 

@@ -12,6 +12,8 @@ const tracks = Array.from({ length: 9 }, (_, index) => ({
   albumTitle: index < 6 ? 'Sample Album' : 'Weekend Album',
 }))
 let mode = 'normal'
+const initialLikes = tracks.slice(0, 3).reverse().map(track => track.trackId)
+let likedIds = new Set(initialLikes)
 const catalogTracks = () => (mode === 'mobile-library' ? tracks.map((track, index) => ({
   ...track, albumId: `00000000-0000-0000-0000-00000000000${index + 1}`,
   albumTitle: `Sample Album ${index + 1}`,
@@ -22,6 +24,12 @@ const albumMetadata = (track, count) => ({
   coverUrl: track.coverUrl, coverExpiresAt: track.coverExpiresAt, releaseDate: '2026-10-05',
   albumType: count <= 3 ? 'SINGLE' : 'EP',
 })
+async function readJson(request) {
+  const chunks = []
+  for await (const chunk of request) chunks.push(chunk)
+  return JSON.parse(Buffer.concat(chunks).toString())
+}
+
 let requests = []
 let audioRequests = []
 const wave = Buffer.alloc(44 + 44100 * 2 * 180)
@@ -37,9 +45,8 @@ http.createServer(async (request, response) => {
   response.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length')
   if (url.pathname === '/__test/state') {
     if (request.method === 'POST') {
-      const chunks = []
-      for await (const chunk of request) chunks.push(chunk)
-      mode = JSON.parse(Buffer.concat(chunks).toString()).mode
+      mode = (await readJson(request)).mode
+      likedIds = new Set(mode === 'liked-empty' || mode === 'empty' ? [] : initialLikes)
       requests = []
       audioRequests = []
     }
@@ -87,7 +94,26 @@ http.createServer(async (request, response) => {
   }
   if (url.pathname === '/users/me/liked-music') {
     if (mode === 'liked-error') return fail(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred')
-    return paginated(mode === 'liked-empty' || mode === 'empty' ? [] : catalogTracks().slice(0, 3).reverse())
+    const catalog = new Map(catalogTracks().map(track => [track.trackId, track]))
+    return paginated([...likedIds].map(id => catalog.get(id)).filter(Boolean))
+  }
+  if (request.method === 'PATCH' && /^\/users\/me\/liked-music\/[^/]+$/.test(url.pathname)) {
+    if (mode === 'liked-error' || mode === 'liked-save-error') {
+      return fail(500, 'INTERNAL_SERVER_ERROR', 'Could not update liked music')
+    }
+    const trackId = url.pathname.split('/').at(-1)
+    const body = await readJson(request).catch(() => null)
+    if (!/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(trackId) || typeof body?.liked !== 'boolean') {
+      return fail(400, 'BAD_REQUEST', 'Invalid liked music request')
+    }
+    if (body.liked && (mode === 'empty' || !tracks.some(track => track.trackId === trackId))) {
+      return fail(404, 'RESOURCE_NOT_FOUND', 'Track not found')
+    }
+    if (!body.liked) likedIds.delete(trackId)
+    else if (!likedIds.has(trackId)) likedIds = new Set([trackId, ...likedIds])
+    response.writeHead(204, { 'Cache-Control': 'no-store' })
+    response.end()
+    return
   }
   if (/^\/albums\/[^/]+(?:\/tracks)?$/.test(url.pathname)) {
     if (mode === 'album-not-found') return fail(404, 'RESOURCE_NOT_FOUND', 'Album not found')

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { beforeEach, afterEach, test, mock } from 'node:test'
 import { auth } from '../src/services/keycloak.js'
-import { getAlbum, getAlbumTracks, getLikedTracks, getTrack, getPlaybackUrl, getSigningEndpoint, getPlayback, getTracks, searchAlbums } from '../src/services/music-api.js'
+import { getAlbum, getAlbumTracks, getLikedTracks, getTrack, getPlaybackUrl, getSigningEndpoint, getPlayback, getTracks, searchAlbums, setTrackLiked } from '../src/services/music-api.js'
 import { getAlbumQueue, trackAuthor, trackDurationSeconds, trackLabel } from '../src/lib/tracks.js'
 
 afterEach(() => mock.restoreAll())
@@ -95,6 +95,43 @@ test('distinguishes an empty liked collection from a failed request', async () =
   assert.deepEqual(await getLikedTracks(), { tracks: [], totalElements: 0 })
   mock.method(globalThis, 'fetch', async () => Response.json({ code: 'FORBIDDEN', message: 'Access denied' }, { status: 403 }))
   await assert.rejects(getLikedTracks(), { status: 403, code: 'FORBIDDEN', message: 'Access denied' })
+})
+
+test('adds and removes liked tracks with authenticated JSON PATCH requests and an empty 204', async () => {
+  const values = []
+  mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(url, `/users/me/liked-music/${track.trackId}`)
+    assert.equal(options.method, 'PATCH')
+    assert.equal(options.headers.Authorization, 'Bearer test-access-token')
+    assert.equal(options.headers['Content-Type'], 'application/json')
+    assert.equal(options.cache, 'no-store')
+    values.push(JSON.parse(options.body))
+    return new Response(null, { status: 204 })
+  })
+  await setTrackLiked(track.trackId, true)
+  await setTrackLiked(track.trackId, false)
+  assert.deepEqual(values, [{ liked: true }, { liked: false }])
+})
+
+test('retries an expired token with the same desired like state', async () => {
+  const calls = []
+  mock.method(auth, 'getAccessToken', async force => force ? 'new-token' : 'expired-token')
+  mock.method(globalThis, 'fetch', async (url, options) => {
+    calls.push([url, options.method, options.body, options.headers.Authorization])
+    return new Response(null, { status: calls.length === 1 ? 401 : 204 })
+  })
+  await setTrackLiked('track/?', false)
+  assert.deepEqual(calls, [
+    ['/users/me/liked-music/track%2F%3F', 'PATCH', '{"liked":false}', 'Bearer expired-token'],
+    ['/users/me/liked-music/track%2F%3F', 'PATCH', '{"liked":false}', 'Bearer new-token'],
+  ])
+})
+
+test('preserves liked-music errors and rejects an unconfirmed write', async () => {
+  mock.method(globalThis, 'fetch', async () => Response.json({ code: 'RESOURCE_NOT_FOUND', message: 'Track not found' }, { status: 404 }))
+  await assert.rejects(setTrackLiked(track.trackId, true), { status: 404, code: 'RESOURCE_NOT_FOUND', message: 'Track not found' })
+  mock.method(globalThis, 'fetch', async () => new Response('<html>SPA fallback</html>'))
+  await assert.rejects(setTrackLiked(track.trackId, false), /did not confirm/)
 })
 
 test('an existing empty album returns an empty queue; missing albums preserve 404', async () => {

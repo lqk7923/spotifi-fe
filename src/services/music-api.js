@@ -1,18 +1,16 @@
 import { isValidAlbum, isValidTrack, trackKey } from '../lib/tracks.js'
 import { apiBase, apiRequest as request, catalogRequest } from './api-client.js'
 
-function trackList(tracks) {
-  if (!Array.isArray(tracks) || !tracks.every(isValidTrack)) {
-    throw new Error('The music server returned an unexpected track list.')
-  }
-  return [...new Map(tracks.map((track) => [trackKey(track), track])).values()]
-}
-
-async function getTrackPages(path, requestPage, signal) {
+async function getPages(path, {
+  signal, query, requestPage = request, kind = 'track', validate = isValidTrack, key = trackKey,
+}) {
   const size = 20
-  const tracks = []
+  const items = new Map()
+  const params = new URLSearchParams({ page: '0', size })
+  if (query?.trim()) params.set('q', query.trim())
   for (let page = 0; ; page++) {
-    const response = await requestPage(`${path}?page=${page}&size=${size}`, signal)
+    params.set('page', page)
+    const response = await requestPage(`${path}?${params}`, signal)
     const body = await response.json()
     const pagination = body?.pagination
     if (!pagination || pagination.page !== page || pagination.size !== size
@@ -23,19 +21,29 @@ async function getTrackPages(path, requestPage, signal) {
       || (page < pagination.totalPages - 1 && body.data.length !== size)) {
       throw new Error('The music server returned unexpected pagination.')
     }
-    tracks.push(...trackList(body.data))
+    if (!body.data.every(validate)) {
+      throw new Error(`The music server returned an unexpected ${kind} list.`)
+    }
+    for (const item of body.data) items.set(key(item), item)
     if (page + 1 >= pagination.totalPages) {
-      return { tracks: trackList(tracks), totalElements: pagination.totalElements }
+      return { items: [...items.values()], totalElements: pagination.totalElements }
     }
   }
 }
 
-export async function getTracks(signal) {
-  return (await getTrackPages('/tracks', catalogRequest, signal)).tracks
+export async function getTracks(signal, query) {
+  return (await getPages('/tracks', { requestPage: catalogRequest, signal, query })).items
 }
 
-export function getLikedTracks(signal) {
-  return getTrackPages('/users/me/liked-music', request, signal)
+export async function getLikedTracks(signal) {
+  const { items, totalElements } = await getPages('/users/me/liked-music', { signal })
+  return { tracks: items, totalElements }
+}
+
+export async function searchAlbums(query, signal) {
+  return (await getPages('/albums', {
+    signal, query, kind: 'album', validate: isValidAlbum, key: album => album.albumId,
+  })).items
 }
 
 /**
@@ -54,7 +62,7 @@ export async function getAlbum(albumId, signal) {
 }
 
 export async function getAlbumTracks(albumId, signal) {
-  return (await getTrackPages(`/albums/${encodeURIComponent(albumId)}/tracks`, request, signal)).tracks
+  return (await getPages(`/albums/${encodeURIComponent(albumId)}/tracks`, { signal })).items
 }
 
 export async function getTrack(trackId, signal) {

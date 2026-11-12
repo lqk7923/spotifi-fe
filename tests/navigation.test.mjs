@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { albumPath, navigate, resolveRoute } from '../src/app/routing/navigation.js'
+import { albumPath, navigate, resolveRoute, searchPath } from '../src/app/routing/navigation.js'
 
 const albumId = '550e8400-e29b-41d4-a716-446655440000'
 
@@ -32,6 +32,13 @@ test('album links escape IDs as one path segment', () => {
   assert.equal(albumPath('album/id?'), '/album/album%2Fid%3F')
 })
 
+test('search deep links round trip the query and support an empty search', () => {
+  const query = ' nhạc & + %_ # '
+  const url = new URL(searchPath(query), 'https://spotifi.example')
+  assert.deepEqual(resolveRoute(url.pathname, url.search), { page: 'search', query })
+  assert.deepEqual(resolveRoute('/search'), { page: 'search', query: '' })
+})
+
 test('navigation adds history and notifies the router without a document reload', (t) => {
   for (const name of ['window', 'PopStateEvent']) {
     const descriptor = Object.getOwnPropertyDescriptor(globalThis, name)
@@ -41,10 +48,14 @@ test('navigation adds history and notifies the router without a document reload'
     })
   }
   const entries = []
+  const replacements = []
   const events = []
   globalThis.window = {
     location: { origin: 'https://spotifi.example', href: 'https://spotifi.example/' },
-    history: { pushState: (...args) => entries.push(args) },
+    history: {
+      pushState: (...args) => entries.push(args),
+      replaceState: (...args) => replacements.push(args),
+    },
     dispatchEvent: event => events.push(event.type),
   }
   globalThis.PopStateEvent = class { constructor(type) { this.type = type } }
@@ -53,4 +64,7 @@ test('navigation adds history and notifies the router without a document reload'
   assert.deepEqual(events, ['popstate'])
   navigate('/')
   assert.equal(entries.length, 1)
+  navigate(searchPath('song'), { replace: true })
+  assert.deepEqual(replacements, [[null, '', '/search?q=song']])
+  assert.deepEqual(events, ['popstate', 'popstate'])
 })

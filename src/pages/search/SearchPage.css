@@ -1,0 +1,34 @@
+.content-sections.search-content {
+  padding-top: 24px;
+}
+
+.search-content section {
+  margin-top: 24px;
+}
+
+.search-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, clamp(100px, 18vw, 174px)), 1fr));
+  gap: 12px;
+}
+
+.search-grid > .music-card.card {
+  width: 100%;
+  max-width: 194px;
+}
+
+.search-grid .music-card .artwork-button,
+.search-grid .music-card .track-art {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.search-status {
+  color: var(--muted);
+  margin-top: 20px;
+}
+
+.search-status .retry-button {
+  margin-top: 12px;
+}

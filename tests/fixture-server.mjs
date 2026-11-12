@@ -16,6 +16,12 @@ const catalogTracks = () => (mode === 'mobile-library' ? tracks.map((track, inde
   ...track, albumId: `00000000-0000-0000-0000-00000000000${index + 1}`,
   albumTitle: `Sample Album ${index + 1}`,
 })) : tracks).map(track => ({ ...track, coverExpiresAt: new Date(Date.now() + 120_000).toISOString() }))
+
+const albumMetadata = (track, count) => ({
+  albumId: track.albumId, title: track.albumTitle, artist: 'Album artist',
+  coverUrl: track.coverUrl, coverExpiresAt: track.coverExpiresAt, releaseDate: '2026-10-05',
+  albumType: count <= 3 ? 'SINGLE' : 'EP',
+})
 let requests = []
 let audioRequests = []
 const wave = Buffer.alloc(44 + 44100 * 2 * 180)
@@ -46,6 +52,8 @@ http.createServer(async (request, response) => {
     response.end(JSON.stringify(body))
   }
   const fail = (status, code, message) => json({ code, message }, status)
+  const term = url.searchParams.get('q')?.trim().toLowerCase()
+  const matches = item => !term || item.title.toLowerCase().includes(term) || item.artist.toLowerCase().includes(term)
   const paginated = all => {
     const page = Number(url.searchParams.get('page') ?? 0)
     const size = Number(url.searchParams.get('size') ?? 20)
@@ -60,10 +68,22 @@ http.createServer(async (request, response) => {
     const all = mode === 'empty' ? [] : mode === 'malformed' ? [null] : mode === 'paginated'
       ? Array.from({ length: 45 }, (_, index) => ({ ...tracks[index % tracks.length], trackId: '00000001-0000-0000-0000-' + String(index).padStart(12, '0') }))
       : catalogTracks()
-    return paginated(all)
+    return paginated(term ? all.filter(item => item && matches(item)) : all)
   }
-  if (/^\/(albums|tracks|users)\//.test(url.pathname) && !request.headers.authorization?.startsWith('Bearer ')) {
+  if ((url.pathname === '/albums' || /^\/(albums|tracks|users)\//.test(url.pathname))
+    && !request.headers.authorization?.startsWith('Bearer ')) {
     return fail(401, 'UNAUTHORIZED', 'Authentication is required')
+  }
+  if (url.pathname === '/albums') {
+    if (mode === 'album-error') return fail(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred')
+    const all = mode === 'empty' ? [] : catalogTracks()
+    const byAlbum = new Map()
+    for (const track of all) {
+      const group = byAlbum.get(track.albumId) ?? []
+      group.push(track)
+      byAlbum.set(track.albumId, group)
+    }
+    return paginated([...byAlbum.values()].map(group => albumMetadata(group[0], group.length)).filter(matches))
   }
   if (url.pathname === '/users/me/liked-music') {
     if (mode === 'liked-error') return fail(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred')
@@ -81,11 +101,7 @@ http.createServer(async (request, response) => {
       if (albumId.endsWith('2')) albumTracks = albumTracks.slice(0, 1)
     }
     if (url.pathname.endsWith('/tracks')) return paginated(mode === 'album-empty' ? [] : albumTracks)
-    return json({ data: {
-      albumId: album.albumId, title: album.albumTitle, artist: 'Album artist',
-      coverUrl: album.coverUrl, coverExpiresAt: album.coverExpiresAt, releaseDate: '2026-10-05',
-      albumType: albumTracks.length <= 3 ? 'SINGLE' : 'EP',
-    } })
+    return json({ data: albumMetadata(album, albumTracks.length) })
   }
   if (/^\/tracks\/[^/]+(?:\/playback)?$/.test(url.pathname)) {
     const track = catalogTracks().find(track => track.trackId === decodeURIComponent(url.pathname.split('/')[2]))

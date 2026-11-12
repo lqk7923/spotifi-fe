@@ -5,10 +5,10 @@ import ScrollArea from '../../../components/ui/ScrollArea.jsx'
 import SidebarPanel from '../../../layouts/music/sidebar/SidebarPanel.jsx'
 
 export default function LibrarySidebar({ library, onSearch, onLibrary, collapsed, compact = false, onToggleCollapse }) {
-  const { selectedAlbum, albums, likedOnly, likedCount, resetFilters } = library
+  const { selectedAlbum, albums, likedOnly, likedCount } = library
 
   const showAll = () => {
-    resetFilters()
+    library.showAll()
     onLibrary()
   }
 

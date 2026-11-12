@@ -1,19 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { filterTracks, getAlbums } from '../src/lib/tracks.js'
+import { getAlbums } from '../src/lib/tracks.js'
 import { albumReleaseDate, greetingLabel, timeLabel } from '../src/lib/format.js'
 
 const tracks = [
   { trackId: 'first', title: 'Industrial Drum', artist: 'looplicator', durationMs: 12000, albumId: 'album-1', albumTitle: 'Factory Sounds' },
   { trackId: 'second', title: 'Night Air', artist: 'another artist', durationMs: 90500, albumId: 'album-2', albumTitle: 'Evening' },
 ]
-test('library search matches API titles, authors, IDs, and collections', () => {
-  for (const search of [' INDUSTRIAL ', 'Looplicator', 'first', 'Factory Sounds', 'album-1']) {
-    assert.deepEqual(filterTracks(tracks, search), [tracks[0]])
-  }
-  assert.deepEqual(filterTracks(tracks, 'missing'), [])
-})
-
 test('groups albums by identity even when titles are shared', () => {
   const duplicate = { ...tracks[0], trackId: 'third' }
   const sameTitle = { ...tracks[1], albumTitle: tracks[0].albumTitle }
@@ -22,13 +15,6 @@ test('groups albums by identity even when titles are shared', () => {
     { albumId: 'album-2', title: 'Factory Sounds', coverUrl: null, coverExpiresAt: undefined },
   ])
   assert.deepEqual(getAlbums([]), [])
-})
-
-test('search preserves collection order and leaves the playback list intact', () => {
-  const collection = [tracks[1], tracks[0]]
-  assert.deepEqual(filterTracks(collection, ''), collection)
-  assert.deepEqual(filterTracks(collection, 'Industrial'), [tracks[0]])
-  assert.deepEqual(collection, [tracks[1], tracks[0]])
 })
 
 test('album cards preserve a cover supplied by any track in the album', () => {

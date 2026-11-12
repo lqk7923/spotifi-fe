@@ -6,10 +6,11 @@ function subscribe(onChange) {
   return () => window.removeEventListener('popstate', onChange)
 }
 
-function getPathname() {
-  return window.location.pathname
+function getLocation() {
+  return window.location.href
 }
 
 export default function useRoute() {
-  return resolveRoute(useSyncExternalStore(subscribe, getPathname))
+  const url = new URL(useSyncExternalStore(subscribe, getLocation))
+  return resolveRoute(url.pathname, url.search)
 }

@@ -30,6 +30,8 @@
 
 @import '../pages/album/AlbumPage.css';
 
+@import '../pages/search/SearchPage.css';
+
 @import '../features/player/components/QueueSidebar.css';
 
 @import '../features/player/components/BottomBar.css';

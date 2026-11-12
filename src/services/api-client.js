@@ -49,7 +49,7 @@ export const apiRequest = createApiClient()
 export function createCatalogClient({ session = auth, baseUrl = apiBase, fetcher = (...args) => fetch(...args) } = {}) {
   const authenticatedRequest = createApiClient({ session, baseUrl, fetcher })
   return async function requestCatalog(path, signal) {
-    if (!/^\/tracks(?:\?(?:page=\d+&size=\d+))?$/.test(path)) {
+    if (!/^\/tracks(?:\?page=\d+&size=\d+(?:&q=[^&#]*)?)?$/.test(path)) {
       throw new Error('Expected a public catalog metadata path.')
     }
     if (session.getSnapshot().status === 'authenticated') return authenticatedRequest(path, signal)

@@ -64,14 +64,6 @@ export function getAlbumQueue(tracks) {
   return [...new Map(tracks.map((track) => [trackKey(track), track])).values()]
 }
 
-export function filterTracks(tracks, search) {
-  const query = search.toLowerCase().trim()
-  return tracks.filter((track) => {
-    const text = `${trackLabel(track)} ${trackAuthor(track)} ${track.trackId} ${track.albumTitle} ${track.albumId}`
-    return text.toLowerCase().includes(query)
-  })
-}
-
 export function getAlbums(tracks) {
   const albums = new Map()
   for (const { albumId, albumTitle, coverUrl, coverExpiresAt } of tracks) {

@@ -152,7 +152,8 @@ requests without JWT. With your deployed Keycloak/BE, also verify:
 
 ## Music API
 
-- `GET /tracks?page=0&size=20` (public) returns `{ data: Track[], pagination: { page, size, totalElements, totalPages } }`. Pages start at 0 and size is capped at 20. The app loads all pages in track-ID order for local search, album cards, and the playback queue.
+- `GET /tracks?page=0&size=20` (public) returns `{ data: Track[], pagination: { page, size, totalElements, totalPages } }`. Pages start at 0 and size is capped at 20. Add `q` to search by title or artist.
+- `GET /albums?page=0&size=20` (authenticated) returns paginated album metadata. Add `q` to search by album title or artist.
 - `GET /tracks/{trackId}` (authenticated): `{ data: Track }` metadata only.
 - `GET /albums/{albumId}` (authenticated) returns `{ data: { albumId, title, artist, coverUrl, coverExpiresAt, releaseDate, albumType } }`. The release date shows the year with an English `Month dd yyyy` tooltip.
 - `GET /albums/{albumId}/tracks?page=0&size=20` (authenticated) returns the same paginated track shape as the public catalog. An existing empty album returns an empty page. A missing album returns 404.
@@ -284,7 +285,9 @@ starts at `bytes=2500000-...`; subsequent seek requests may use different offset
 The following track should then receive its own prefix request. Signed URLs are
 not cache identities: the cache belongs to the selected track's playback session.
 
-Search filters titles, artists, track IDs, and collections locally. Liked Songs is read-only until the backend exposes endpoints for adding and removing likes. Previously saved browser likes remain in browser storage.
+Search at `/search?q=...` displays songs above albums on a vertically scrolling page. Each section wraps its cards and appears when it has results. Guests search album titles from public catalog metadata. Signed-in users search the backend album catalog by title or artist.
+
+Liked Songs is read-only until the backend exposes endpoints for adding and removing likes. Previously saved browser likes remain in browser storage.
 
 ## Production
 
@@ -293,7 +296,7 @@ npm run build
 npm run preview
 ```
 
-Deploy `dist` with an SPA fallback to `index.html` for `/` and `/album/{uuid}`.
+Deploy `dist` with an SPA fallback to `index.html` for `/`, `/search`, and `/album/{uuid}`.
 Configure a reverse proxy for `/tracks`, `/albums`, and `/users` API requests,
 or set `VITE_API_BASE_URL` to the backend root before building
 and allow the frontend origin through backend CORS. The browser must be able to access
@@ -334,8 +337,8 @@ display the Album page; `/` should still display Home.
 - `src/app/routing/`: URL routing, browser history, and internal links.
 - `src/layouts/music/`: layout composition, TopBar, MainContent, shared SidebarPanel, and sidebar resizing.
 - `src/layouts/music/useMusicLayout.js`: sidebar widths and collapse state. The queue collapses on initial load below 1,000px and whenever the viewport crosses below that breakpoint. Users can reopen it manually; widening the viewport preserves their selection.
-- `src/pages/home/`, `src/pages/album/`: page content, headers, actions, and page-specific styles.
-- `src/features/library/` contains the library sidebar, track-list states, and hooks for tracks, albums, filters, and account liked tracks.
+- `src/pages/home/`, `src/pages/album/`, and `src/pages/search/` contain page content, actions, and page-specific styles.
+- `src/features/library/` contains the library sidebar, track-list states, and hooks for tracks, albums, and account liked tracks.
 - `src/features/player/`: BottomBar, playback controls, queue sidebar, audio lifecycle, and preload support. Playback still uses the current page's collection.
 - `src/components/ui/`: shared buttons and scroll areas; `src/components/music/`: artwork, media items, track tables, and playback buttons.
 - `src/services/music-api.js`: backend requests and response handling.

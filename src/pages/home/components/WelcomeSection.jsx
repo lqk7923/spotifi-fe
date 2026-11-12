@@ -1,11 +1,9 @@
 import { AudioLines } from 'lucide-react'
 import { greetingLabel } from '../../../lib/format.js'
-import { getAlbums } from '../../../lib/tracks.js'
 import QuickAlbum from './QuickAlbum.jsx'
 
 export default function WelcomeSection({ library, player, onAlbumHover }) {
-  const { loading, error, visibleTracks } = library
-  const albums = getAlbums(visibleTracks).slice(0, 8)
+  const { loading, error, albums } = library
   let content = <p className="welcome-copy">A little music. A better day. Find your next track below.</p>
 
   if (loading) {
@@ -17,7 +15,7 @@ export default function WelcomeSection({ library, player, onAlbumHover }) {
   } else if (!error && albums.length) {
     content = (
       <div className="quick-grid">
-        {albums.map((album) => (
+        {albums.slice(0, 8).map((album) => (
           <QuickAlbum key={album.albumId} album={album} tracks={library.collectionTracks}
             player={player} onAlbumHover={onAlbumHover} />
         ))}

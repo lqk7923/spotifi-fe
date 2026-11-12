@@ -27,7 +27,7 @@ export default function TopBar({ search, onSearchChange, searchRef, onHome }) {
         </AppLink>
         <label className="search-field input">
           <Search size={24} aria-hidden="true" />
-          <span className="sr-only">Search tracks</span>
+          <span className="sr-only">Search songs and albums</span>
           <input
             ref={searchRef}
             value={search}
@@ -35,7 +35,8 @@ export default function TopBar({ search, onSearchChange, searchRef, onHome }) {
             placeholder="What do you want to play?"
           />
           {search && (
-            <button type="button" aria-label="Clear search" onClick={() => onSearchChange('')}>
+            <button type="button" aria-label="Clear search"
+              onClick={() => { onSearchChange(''); searchRef.current?.focus() }}>
               <X size={16} />
             </button>
           )}

@@ -2,7 +2,7 @@ import { CircleAlert, Heart, LoaderCircle, Music2, RefreshCw } from 'lucide-reac
 import TrackTable from '../../../components/music/TrackTable.jsx'
 
 export default function LibraryContent({ library, player }) {
-  const { loading, error, collectionTracks, visibleTracks, selectedAlbum, likedOnly, refresh, resetFilters } = library
+  const { loading, error, collectionTracks, selectedAlbum, likedOnly, refresh, showAll } = library
   if (loading) {
     return (
       <div className="track-loading" role="status">
@@ -19,17 +19,17 @@ export default function LibraryContent({ library, player }) {
       </div>
     )
   }
-  if (!visibleTracks.length) {
-    if (likedOnly && !collectionTracks.length) {
+  if (!collectionTracks.length) {
+    if (likedOnly) {
       return (
         <div className="state-panel">
           <span className="state-icon"><Heart size={32} /></span>
           <h2>No liked songs yet</h2><p>Songs saved to your account will appear here.</p>
-          <button className="btn retry-button" onClick={resetFilters}>Show all tracks</button>
+          <button className="btn retry-button" onClick={showAll}>Show all tracks</button>
         </div>
       )
     }
-    if (selectedAlbum && !collectionTracks.length) {
+    if (selectedAlbum) {
       return (
         <div className="state-panel">
           <span className="state-icon"><Music2 size={32} /></span>
@@ -38,22 +38,16 @@ export default function LibraryContent({ library, player }) {
         </div>
       )
     }
-    const message = collectionTracks.length
-      ? 'Try another search.'
-      : 'Add some tracks to your music collection, then refresh to start listening.'
     return (
       <div className="state-panel">
         <span className="state-icon"><Music2 size={32} /></span>
-        <h3>{collectionTracks.length ? 'No matching tracks' : 'Your library starts here'}</h3><p>{message}</p>
-        <button className="btn retry-button" onClick={collectionTracks.length
-          ? library.search ? () => library.setSearch('') : resetFilters
-          : refresh}>
-          {collectionTracks.length ? library.search ? 'Clear search' : 'Show all tracks' : 'Refresh library'}
-        </button>
+        <h3>Your library starts here</h3>
+        <p>Add some tracks to your music collection, then refresh to start listening.</p>
+        <button className="btn retry-button" onClick={refresh}>Refresh library</button>
       </div>
     )
   }
   return (
-    <TrackTable tracks={visibleTracks} player={player} isLiked={library.isLiked} showAlbum={!selectedAlbum} />
+    <TrackTable tracks={collectionTracks} player={player} isLiked={library.isLiked} showAlbum={!selectedAlbum} />
   )
 }

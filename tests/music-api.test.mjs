@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { beforeEach, afterEach, test, mock } from 'node:test'
 import { auth } from '../src/services/keycloak.js'
-import { getAlbum, getAlbumTracks, getLikedTracks, getTrack, getPlaybackUrl, getSigningEndpoint, getPlayback, getTracks } from '../src/services/music-api.js'
+import { getAlbum, getAlbumTracks, getLikedTracks, getTrack, getPlaybackUrl, getSigningEndpoint, getPlayback, getTracks, searchAlbums } from '../src/services/music-api.js'
 import { getAlbumQueue, trackAuthor, trackDurationSeconds, trackLabel } from '../src/lib/tracks.js'
 
 afterEach(() => mock.restoreAll())
@@ -37,6 +37,28 @@ test('supports an empty database and rejects malformed pagination', async () => 
     mock.method(globalThis, 'fetch', async () => Response.json(body))
     await assert.rejects(getTracks(), /pagination/)
   }
+})
+
+test('search keeps the same encoded query across pages and applies album authentication', async () => {
+  const first = Array.from({ length: 20 }, (_, index) => ({ ...album, albumId: String(index) }))
+  const paths = []
+  mock.method(auth, 'getSnapshot', () => ({ status: 'signed-out' }))
+  mock.method(globalThis, 'fetch', async (path, options) => {
+    paths.push(path)
+    if (path.startsWith('/tracks?')) {
+      assert.equal(options.headers?.Authorization, undefined)
+      return Response.json(page([]))
+    }
+    assert.equal(options.headers.Authorization, 'Bearer test-access-token')
+    return Response.json(path.includes('page=0') ? page(first, 0, 21) : page([album], 1, 21))
+  })
+  assert.deepEqual(await getTracks(undefined, '  Nhạc & + %_  '), [])
+  assert.deepEqual(await searchAlbums('  Nhạc & + %_  '), [...first, album])
+  assert.deepEqual(paths, [
+    '/tracks?page=0&size=20&q=Nh%E1%BA%A1c+%26+%2B+%25_',
+    '/albums?page=0&size=20&q=Nh%E1%BA%A1c+%26+%2B+%25_',
+    '/albums?page=1&size=20&q=Nh%E1%BA%A1c+%26+%2B+%25_',
+  ])
 })
 
 test('loads protected album metadata and every page of its track list separately', async () => {
